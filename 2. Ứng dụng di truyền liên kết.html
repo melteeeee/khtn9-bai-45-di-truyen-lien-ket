@@ -977,11 +977,6 @@ function breedView3D(V){
   const mud=new THREE.Mesh(new THREE.PlaneGeometry(PW-.36,PD-.36),soilTop); mud.rotation.x=-Math.PI/2; mud.position.y=.01; mud.receiveShadow=true; root.add(mud);
   const water=new THREE.Mesh(new THREE.PlaneGeometry(PW-.36,PD-.36),new THREE.MeshPhongMaterial({color:0x9ad8d2,transparent:true,opacity:.28,shininess:140,specular:0xffffff,depthWrite:false}));
   water.rotation.x=-Math.PI/2; water.position.y=.07; root.add(water);
-  // cỏ lấm tấm trên bờ
-  const tuftM=mat(0x6aa040,{side:THREE.DoubleSide});
-  for(let i=0;i<70;i++){ const side=i%4, u=rnd(-.48,.48);
-    const x= side<2 ? u*PW : (side===2?1:-1)*(PW/2-.09), z= side<2 ? (side===0?1:-1)*(PD/2-.09) : u*PD;
-    const t=new THREE.Mesh(leafGeo(rnd(.12,.22),.05,.05),tuftM); t.position.set(x+rnd(-.05,.05),.16,z+rnd(-.05,.05)); t.rotation.y=rnd(0,6.28); t.rotation.x=rnd(-.4,.4); root.add(t); }
 
   // khóm lúa
   const stemM=mat(0x5f9c40,{shininess:30});
