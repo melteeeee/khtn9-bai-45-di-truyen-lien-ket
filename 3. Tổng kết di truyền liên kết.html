@@ -1701,9 +1701,50 @@
     }
 
     .learn p {
-      margin: 0;
+      margin: 4px 0 0;
       font-size: 14.5px;
       line-height: 1.6
+    }
+
+    /* chỉ mở nội dung của hình đang xem, các ý khác chỉ hiện tiêu đề */
+    .learn:not(.on) {
+      align-items: center
+    }
+
+    .learn:not(.on) p {
+      display: none
+    }
+
+    .learn .lt {
+      flex: 1;
+      min-width: 0
+    }
+
+    .learn .lh {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--muted)
+    }
+
+    .learn .lh::after {
+      content: ' ▸';
+      font-weight: 400
+    }
+
+    .learn.on .lh {
+      color: var(--brand-dark);
+      cursor: default
+    }
+
+    .learn.on .lh::after {
+      content: ''
     }
 
     .ico {
@@ -1957,21 +1998,52 @@
     }
     const fbShow = (el, cls, html) => { el.className = 'fb show ' + cls; el.innerHTML = html; };
 
-    /* Thuyết minh (lời cô giáo + đọc to) */
-    let speaking = false;
-    function say(text) {
-      const t = $('#narrTx'); if (t) t.innerHTML = text;
-      if (speaking) speak(text);
+    /* ---------- file voice thuyết minh: dán đường dẫn mp3 vào đúng khoá; để trống = không phát ----------
+       Lời đọc của từng khoá nằm trong tts/tts_phan_3_bai_45.json (khoá ghi trong dấu [ ] ở cuối tên file). */
+    const AUDIO = {
+      // 1.1 vào bước Ghi nhớ (lời chốt)
+      note: 'https://assets.yoolife.com.vn/yootek/1794296322497-7172.mp3',
+      // 1.2–1.6 hình 1: giảm phân
+      nst0: 'https://assets.yoolife.com.vn/yootek/1794296327016-9391.mp3',
+      nst1: 'https://assets.yoolife.com.vn/yootek/1794296332519-7194.mp3',
+      nst2: 'https://assets.yoolife.com.vn/yootek/1794296337486-1321.mp3',
+      nst3: 'https://assets.yoolife.com.vn/yootek/1794296342476-3293.mp3',
+      nst4: 'https://assets.yoolife.com.vn/yootek/1794296346560-2080.mp3',
+      // 1.7–1.10 hình 2: nhóm gene tốt
+      grp0: 'https://assets.yoolife.com.vn/yootek/1794296350649-5253.mp3',
+      grp1: 'https://assets.yoolife.com.vn/yootek/1794296354742-8625.mp3',
+      grp2: 'https://assets.yoolife.com.vn/yootek/1794296359695-5655.mp3',
+      grp3: 'https://assets.yoolife.com.vn/yootek/1794296363757-8634.mp3',
+      // 1.11 hình 3: so sánh
+      cmp: 'https://assets.yoolife.com.vn/yootek/1794296367966-5574.mp3',
+      // 2.1–2.6 sơ đồ tư duy
+      map: 'https://assets.yoolife.com.vn/yootek/1794296372151-9709.mp3',
+      b1: 'https://assets.yoolife.com.vn/yootek/1794296376185-8804.mp3',
+      b2: 'https://assets.yoolife.com.vn/yootek/1794296380249-9222.mp3',
+      b3: 'https://assets.yoolife.com.vn/yootek/1794296385368-2396.mp3',
+      mapNo: '',
+      mapDone: 'https://assets.yoolife.com.vn/yootek/1794296393452-9907.mp3',
+    };
+    let voice = null, muted = false, started = false, lastKey = null;
+    function stopVoice() { if (voice) { voice.pause(); voice = null; } }
+    function playVoice(key) {
+      stopVoice(); if (muted || !started || !key || !AUDIO[key]) return;
+      const a = new Audio(AUDIO[key]); voice = a;
+      a.onerror = () => { if (voice === a) voice = null; };
+      a.play().catch(() => { if (voice === a) voice = null; });
     }
-    function speak(t) {
-      if (!('speechSynthesis' in window)) return;
-      speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t.replace(/<[^>]+>/g, '')); u.lang = 'vi-VN'; u.rate = .95; speechSynthesis.speak(u);
+    const voiceBusy = () => !!voice && !voice.paused && !voice.ended;
+    // hiện lời cô giáo trong khung thuyết minh và phát file voice tương ứng (nếu có)
+    function say(text, key) {
+      const t = $('#narrTx'); if (t) t.innerHTML = text;
+      lastKey = key || null; playVoice(key);
     }
     const narrHTML = `<div class="nar"><div class="tx" id="narrTx"></div></div>`;
-    $('#btnNarr').onclick = () => { speaking = !speaking; $('#btnNarr').setAttribute('aria-pressed', speaking); if (speaking) speak($('#narrTx').textContent); else if ('speechSynthesis' in window) speechSynthesis.cancel(); };
+    $('#btnNarr').setAttribute('aria-pressed', 'true');
+    $('#btnNarr').onclick = () => { muted = !muted; $('#btnNarr').setAttribute('aria-pressed', !muted); if (muted) stopVoice(); else playVoice(lastKey); };
     $('#lessonToggle').onclick = () => { const l = $('#lesson'); l.classList.toggle('collapsed'); $('#lessonToggle').textContent = l.classList.contains('collapsed') ? '▸' : '▾'; };
     $('#btnFull').onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); };
-    $('#btnExplore').onclick = () => { $('#intro').classList.add('gone'); };
+    $('#btnExplore').onclick = () => { $('#intro').classList.add('gone'); started = true; playVoice(lastKey); };
 
     /* ============ điều hướng ============ */
     const ACTS = [
@@ -1990,7 +2062,7 @@
     function unlock(i) { finished.add(i - 1); buildSteps(); }   // gọi khi hoàn thành hoạt động i-1
     function go(i) {
       if (cleanup) { cleanup(); cleanup = null; }
-      if ('speechSynthesis' in window) speechSynthesis.cancel();
+      stopVoice();
       cur = i;
       $('#stage').classList.toggle('wide', !!ACTS[i].wide);
       $$('#tools .xt').forEach(e => e.remove());
@@ -2076,7 +2148,7 @@
       const lineSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); lineSvg.setAttribute('class', 'lines3d'); host.appendChild(lineSvg);
       const cap = document.createElement('div'); cap.className = 'cap3d'; host.appendChild(cap);
       const labels = [], btns = [];
-      let tween = null, raf = 0, last = performance.now(), capHtml = '';
+      let tween = null, raf = 0, last = performance.now(), capHtml = '', pendingVoice = null;
       const v = new THREE.Vector3();
       const wide = () => innerWidth > 900;
       // vùng nhìn thấy được (không bị bảng bài học và khung chú thích che), tính theo px
@@ -2101,6 +2173,9 @@
         },
         tool(text, fn) { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost xt'; b.textContent = text; b.onclick = fn; $('#tools').appendChild(b); btns.push(b); return b; },
         caption(html) { if (html !== capHtml) { capHtml = html; cap.innerHTML = html; } },
+        // xếp hàng file voice của giai đoạn: phát khi lời đang đọc (vd. lời chốt) đã xong
+        voice(key) { pendingVoice = key; },
+        busy: () => !!pendingVoice || voiceBusy(),
         // vị trí camera để thấy vừa vùng nửa rộng halfW, nửa cao halfH (hơi nghiêng để thấy khối)
         view(halfW, halfH, yaw = .2, pitch = .1) {
           const a = area(), d = 1.06 * Math.max(halfW / (.4142 * a.lw / a.h), halfH / (.4142 * a.lh / a.h));
@@ -2117,6 +2192,7 @@
         raf = requestAnimationFrame(frame); const dt = Math.min((now - last) / 1000, .05); last = now;
         applyOffset();
         const intro = $('#intro'), waiting = intro && !intro.classList.contains('gone');   // chưa bấm "Bắt đầu" thì chưa chạy hoạt ảnh
+        if (pendingVoice && started && !waiting && !voiceBusy()) { const k = pendingVoice; pendingVoice = null; playVoice(k); }
         K.update && K.update(waiting ? 0 : dt, now);
         if (tween) { tween.t = Math.min(1, tween.t + dt / 1.2); const k = ease3(tween.t); camera.position.lerpVectors(tween.from, tween.to, k); controls.target.lerpVectors(tween.tf, tween.tt, k); if (tween.t >= 1) tween = null; }
         controls.update(); renderer.render(scene, camera);
@@ -2224,7 +2300,7 @@
         '<b>Kì sau I, kì cuối I:</b> hai NST kép của cặp tương đồng phân li về hai tế bào con. B và V nằm trên cùng một NST nên <b>luôn đi cùng nhau</b>; b và v cũng vậy.',
         '<b>Giảm phân II:</b> hai chromatid tách nhau, tạo 4 giao tử nhưng chỉ có <b>2 loại: BV và bv</b>. Các gene trên cùng một NST di truyền cùng nhau.'
       ];
-      let s = 0, playing = true, hold = 3.4, wideCam = false;
+      let s = 0, playing = true, hold = 3.4, wideCam = false, lastCi = -1;
       const SP = 1.9, HOLD = 2.8;
       K.home = () => wideCam ? K.view(5.6, 2.3) : K.view(2.6, 2.4);
       function place() {
@@ -2258,12 +2334,13 @@
           });
           spGeo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
         }
-        K.caption(CAP[Math.min(4, Math.ceil(s - .02))] + LEG3);
+        const ci = Math.min(4, Math.ceil(s - .02)); K.caption(CAP[ci] + LEG3);
+        if (ci !== lastCi) { lastCi = ci; K.voice('nst' + ci); }
       }
       K.update = dt => {
         if (playing) {
           if (hold > 0) hold -= dt;
-          else {
+          else if (!(s === Math.floor(s) && K.busy())) {   // đứng ở một giai đoạn: chờ đọc xong lời rồi mới chạy tiếp
             const nx = Math.floor(s + 1e-6) + 1; s = Math.min(nx, s + dt / SP);
             if (s >= nx) { s = nx; if (nx >= 4) { playing = false; setBtn(); } else hold = HOLD; }
           }
@@ -2272,7 +2349,7 @@
         place();
       };
       const bPlay = K.tool('⏸ Tạm dừng', () => {
-        if (s >= 4) { s = 0; hold = 1.5; wideCam = false; playing = true; K.goHome(); }
+        if (s >= 4) { stopVoice(); s = 0; hold = 1.5; wideCam = false; playing = true; K.goHome(); }
         else playing = !playing;
         setBtn();
       });
@@ -2322,7 +2399,7 @@
         'Các tính trạng tốt do nhóm gene này quy định <b>luôn di truyền cùng nhau</b> → trong chọn giống có thể chọn được nhóm tính trạng tốt, phù hợp mục tiêu sản xuất.'
       ];
       const NOTE = '<small>Mô hình minh hoạ: mỗi thế hệ chỉ vẽ một NST (mang nhóm gene) của cặp tương đồng.</small>';
-      let s = 0, playing = true, hold = 3.4;
+      let s = 0, playing = true, hold = 3.4, lastCi = -1;
       const SP = 2.2, HOLD = 2.4;
       K.home = () => K.view(5.7, 3.0, .22, .08);
       function place(now) {
@@ -2338,12 +2415,13 @@
         });
         const pul = s >= 3 ? .18 + .22 * (.5 + .5 * Math.sin(now / 240)) : .22;
         frames.forEach((t, i) => { if (t.parent.parent.visible) t.material.opacity = pul * (i ? clamp01((s - (i - 1)) * 4) : 1); });
-        K.caption(CAP[Math.min(3, Math.ceil(s - .02))] + NOTE);
+        const ci = Math.min(3, Math.ceil(s - .02)); K.caption(CAP[ci] + NOTE);
+        if (ci !== lastCi) { lastCi = ci; K.voice('grp' + ci); }
       }
       K.update = (dt, now) => {
         if (playing) {
           if (hold > 0) hold -= dt;
-          else {
+          else if (!(s === Math.floor(s) && K.busy())) {   // đứng ở một giai đoạn: chờ đọc xong lời rồi mới chạy tiếp
             const nx = Math.floor(s + 1e-6) + 1; s = Math.min(nx, s + dt / SP);
             if (s >= nx) { s = nx; if (nx >= 3) { playing = false; setBtn(); } else hold = HOLD; }
           }
@@ -2351,7 +2429,7 @@
         place(now);
       };
       const bPlay = K.tool('⏸ Tạm dừng', () => {
-        if (s >= 3) { s = 0; hold = 1.5; playing = true; }
+        if (s >= 3) { stopVoice(); s = 0; hold = 1.5; playing = true; }
         else playing = !playing;
         setBtn();
       });
@@ -2411,39 +2489,38 @@
         sum.forEach(l => l.op = clamp01((s - 1.1) * 3));
         K.caption(CAP);
       };
-      K.tool('↺ Xem lại', () => { s = 0; });
+      K.tool('↺ Xem lại', () => { s = 0; stopVoice(); K.voice('cmp'); });
       K.tool('⤢ Toàn cảnh', () => K.goHome());
-      K.update(0); K.start();
+      K.voice('cmp'); K.update(0); K.start();
       return K.dispose;
     }
     const SCENES3D = { nst: sceneNST, grp: sceneGRP, cmp: sceneCMP };
 
     function act2d(P, V) {
       const ITEMS = [
-        { k: 'nst', t: 'Di truyền liên kết là hiện tượng các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau trong quá trình giảm phân.' },
-        { k: 'grp', t: 'Các tính trạng do các gene trên một NST quy định luôn di truyền cùng nhau, tạo thành <b>nhóm tính trạng di truyền liên kết</b>. Trong chọn giống, có thể ứng dụng để chọn được những nhóm tính trạng tốt luôn di truyền cùng nhau, phù hợp mục tiêu sản xuất của con người.' },
-        { k: 'cmp', t: 'Di truyền phân li độc lập làm xuất hiện biến dị tổ hợp, tạo ra sự đa dạng cho sinh giới; còn di truyền liên kết <b>hạn chế biến dị tổ hợp</b>, đảm bảo sự di truyền bền vững của nhóm tính trạng.' },
+        { k: 'nst', h: 'Khái niệm di truyền liên kết', t: 'Di truyền liên kết là hiện tượng các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau trong quá trình giảm phân.' },
+        { k: 'grp', h: 'Nhóm tính trạng liên kết và chọn giống', t: 'Các tính trạng do các gene trên một NST quy định luôn di truyền cùng nhau, tạo thành <b>nhóm tính trạng di truyền liên kết</b>. Trong chọn giống, có thể ứng dụng để chọn được những nhóm tính trạng tốt luôn di truyền cùng nhau, phù hợp mục tiêu sản xuất của con người.' },
+        { k: 'cmp', h: 'So sánh với phân li độc lập', t: 'Di truyền phân li độc lập làm xuất hiện biến dị tổ hợp, tạo ra sự đa dạng cho sinh giới; còn di truyền liên kết <b>hạn chế biến dị tổ hợp</b>, đảm bảo sự di truyền bền vững của nhóm tính trạng.' },
       ];
       P.innerHTML = `
   <h2>Ghi nhớ</h2>
   <div class="kcard"><div class="kh"><span class="dot"></span>Em đã học</div>
-    <p class="muted" style="font-size:13px;margin-bottom:4px">Chạm biểu tượng để xem lại hình minh hoạ.</p>
-    ${ITEMS.map((it, i) => `<div class="learn"><button class="ico" type="button" data-k="${it.k}" aria-label="Xem hình minh hoạ ý ${i + 1}">${ICONS[it.k]}</button><p>${it.t}</p></div>`).join('')}</div>
-  <div class="kcard cap"><div class="kh"><span class="dot"></span>Em có thể</div>
-    <ul><li>Nhận biết được các tính trạng di truyền liên kết với nhau ở sinh vật.</li><li>Giải thích được cơ sở ứng dụng di truyền liên kết trong chọn giống.</li></ul></div>
+    <p class="muted" style="font-size:13px;margin-bottom:4px">Chạm từng ý để xem nội dung và hình minh hoạ.</p>
+    ${ITEMS.map((it, i) => `<div class="learn" data-k="${it.k}"><button class="ico" type="button" data-k="${it.k}" aria-label="Xem hình minh hoạ ý ${i + 1}">${ICONS[it.k]}</button><div class="lt"><button class="lh" type="button" data-k="${it.k}">${it.h}</button><p>${it.t}</p></div></div>`).join('')}</div>
   <div><button class="qbtn" id="d-map">Lập sơ đồ tổng kết →</button></div>`;
-      say('<b>CHỐT LẠI</b>: di truyền liên kết là hiện tượng các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau trong quá trình giảm phân. Trong chọn giống, có thể ứng dụng để chọn được những <b>nhóm tính trạng tốt</b> luôn di truyền cùng nhau. Di truyền liên kết <b>hạn chế biến dị tổ hợp</b>, đảm bảo sự di truyền bền vững của nhóm tính trạng.');
+      say('<b>CHỐT LẠI</b>: di truyền liên kết là hiện tượng các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau trong quá trình giảm phân. Trong chọn giống, có thể ứng dụng để chọn được những <b>nhóm tính trạng tốt</b> luôn di truyền cùng nhau. Di truyền liên kết <b>hạn chế biến dị tổ hợp</b>, đảm bảo sự di truyền bền vững của nhóm tính trạng.', 'note');
       const has3D = typeof THREE !== 'undefined' && !!THREE.OrbitControls;
       let stop3D = null, curK = null;
       function show(k) {
-        if (k === curK) return; curK = k;
+        if (k === curK) return; if (curK) stopVoice(); curK = k;
         if (stop3D) { stop3D(); stop3D = null; }
         V.className = 'vis'; V.style.cssText = ''; V.innerHTML = '';
         if (has3D) stop3D = SCENES3D[k](kit3D(V));
         else V.innerHTML = illus(k);   // dự phòng: hình 2D khi không tải được Three.js
         $$('.ico', P).forEach(b => b.classList.toggle('on', b.dataset.k === k));
+        $$('.learn', P).forEach(r => r.classList.toggle('on', r.dataset.k === k));   // chỉ mở nội dung của ý đang xem
       }
-      $$('.ico', P).forEach(b => b.onclick = () => show(b.dataset.k));
+      $$('.ico, .lh', P).forEach(b => b.onclick = () => show(b.dataset.k));
       show('nst');
       $('#d-map').onclick = () => go(1);
       unlock(1);
@@ -2517,7 +2594,7 @@
     <div class="fb" id="e-fb"></div>
     <div><button class="qbtn hide" id="e-dl">Tải sơ đồ (PNG)</button><button class="qbtn alt hide" id="e-again">↺ Làm lại</button></div>
   </div>`;
-      say('Chúng mình cùng nhìn lại cả bài học bằng một <b>sơ đồ tư duy</b> nhé. Ở giữa là “Di truyền liên kết”, xung quanh có 3 nhánh. Em kéo các thẻ từ khoá vào đúng nhánh.');
+      say('Chúng mình cùng nhìn lại cả bài học bằng một <b>sơ đồ tư duy</b> nhé. Ở giữa là “Di truyền liên kết”, xung quanh có 3 nhánh. Em kéo các thẻ từ khoá vào đúng nhánh.', 'map');
       const cards = [], branchOf = {}, textOf = {};
       ['b1', 'b2', 'b3'].forEach(k => MM[k].items.forEach((t, i) => { const id = k + '_' + i; cards.push({ id, html: esc(t) }); branchOf[id] = k; textOf[id] = t; }));
       MM_X.forEach(x => { cards.push({ id: x.id, html: esc(x.text) }); textOf[x.id] = x.text; });
@@ -2532,12 +2609,12 @@
         draw(b.placed);
         ['b1', 'b2', 'b3'].forEach(k => {
           const full = MM[k].items.every((_, i) => b.placed[k + '-' + i]);
-          if (full && !doneB.has(k)) { doneB.add(k); say(MM[k].done); }
+          if (full && !doneB.has(k)) { doneB.add(k); say(MM[k].done, k); }
         });
         if (n === 10) {
           b.lock();
           fbShow(fb, 'ok', '<b>Giỏi lắm!</b> Sơ đồ tư duy đã hoàn chỉnh. Em có thể bấm “Tải sơ đồ” và làm theo mẫu để vẽ sơ đồ tư duy của riêng mình bằng công cụ số mà giáo viên yêu cầu nhé.');
-          say('Giỏi lắm! Em có thể bấm <b>“Tải sơ đồ”</b> và làm theo mẫu để vẽ sơ đồ tư duy của riêng mình bằng công cụ số mà giáo viên yêu cầu nhé.');
+          say('Giỏi lắm! Em có thể bấm <b>“Tải sơ đồ”</b> và làm theo mẫu để vẽ sơ đồ tư duy của riêng mình bằng công cụ số mà giáo viên yêu cầu nhé.', 'mapDone');
           $('#e-dl').classList.remove('hide'); $('#e-again').classList.remove('hide');
           unlock(2);
           setTimeout(() => fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 200);
@@ -2546,6 +2623,7 @@
         const want = cell.dataset.cell.split('-')[0];
         if (branchOf[id] === want) return true;
         const x = MM_X.find(o => o.id === id);
+        playVoice('mapNo');
         fbShow(fb, 'no', x ? `<b>Thẻ “${esc(x.text)}” chưa phù hợp.</b> ${x.why}` : `<b>Thẻ “${esc(textOf[id])}” chưa đúng nhánh.</b> Gợi ý: ${MM[branchOf[id]].hint}`);
         return false;
       });
