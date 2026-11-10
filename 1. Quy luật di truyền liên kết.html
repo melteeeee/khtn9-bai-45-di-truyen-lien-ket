@@ -460,21 +460,39 @@ function quiz(host, {q, opts, multi=false, correct, ok, bad, hint, onDone}){
 }
 const fbShow=(el,cls,html)=>{ el.className='fb show '+cls; el.innerHTML=html; };
 
-/* Thuyết minh (lời cô giáo + đọc to) */
-let speaking=false;
-function say(text){
-  const t=$('#narrTx'); if(t) t.innerHTML=text;
-  if(speaking) speak(text);
+/* ---------- file voice thuyết minh: dán đường dẫn mp3 vào đúng khoá; để trống = không phát ----------
+   Lời đọc của từng khoá nằm trong tts/tts_phan_1_bai_45.json (khoá ghi trong dấu [ ] ở cuối tên file). */
+const AUDIO = {
+  // Bước 1: Thí nghiệm của Morgan
+  p: '', f1: '', fa: '',
+  // Bước 2: Nếu theo Mendel?
+  mendel: '', q3: '',
+  // Bước 3: Giải thích (3D)
+  cell: '', pair: '', genes: '', meioL: '', gam2: '', fert: '', indep: '', meioI: '',
+  // Bước 4: Khái niệm
+  concept: '', conceptOk: '',
+  // Bước 5: So sánh hai quy luật
+  table: '', meaning: '',
+};
+let voice=null, muted=false, started=false, lastKey=null;
+function stopVoice(){ if(voice){ voice.pause(); voice=null; } }
+function playVoice(key){
+  stopVoice(); if(muted||!started||!key||!AUDIO[key]) return;
+  const a=new Audio(AUDIO[key]); voice=a;
+  a.onerror=()=>{ if(voice===a) voice=null; };
+  a.play().catch(()=>{ if(voice===a) voice=null; });
 }
-function speak(t){
-  if(!('speechSynthesis' in window)) return;
-  speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t.replace(/<[^>]+>/g,'')); u.lang='vi-VN'; u.rate=.95; speechSynthesis.speak(u);
+// hiện lời cô giáo trong khung thuyết minh và phát file voice tương ứng (nếu có)
+function say(text,key){
+  const t=$('#narrTx'); if(t) t.innerHTML=text;
+  lastKey=key||null; playVoice(key);
 }
 const narrHTML = `<div class="nar"><div class="tx" id="narrTx"></div></div>`;
-$('#btnNarr').onclick=()=>{ speaking=!speaking; $('#btnNarr').setAttribute('aria-pressed',speaking); if(speaking) speak($('#narrTx').textContent); else if('speechSynthesis' in window) speechSynthesis.cancel(); };
+$('#btnNarr').setAttribute('aria-pressed','true');
+$('#btnNarr').onclick=()=>{ muted=!muted; $('#btnNarr').setAttribute('aria-pressed',!muted); if(muted) stopVoice(); else playVoice(lastKey); };
 $('#lessonToggle').onclick=()=>{ const l=$('#lesson'); l.classList.toggle('collapsed'); $('#lessonToggle').textContent=l.classList.contains('collapsed')?'▸':'▾'; };
 $('#btnFull').onclick=()=>{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); };
-$('#btnExplore').onclick=()=>{ $('#intro').classList.add('gone'); };
+$('#btnExplore').onclick=()=>{ $('#intro').classList.add('gone'); started=true; playVoice(lastKey); };
 
 /* ============ điều hướng ============ */
 const ACTS = [
@@ -483,7 +501,6 @@ const ACTS = [
   {id:'1c', name:'Giải thích', fn:act1c},
   {id:'1d', name:'Khái niệm', fn:act1d},
   {id:'1e', name:'So sánh hai quy luật', fn:act1e, wide:true},
-  {id:'1f', name:'Ghi nhớ', fn:act1f},
 ];
 let cur=0, unlocked=ACTS.length-1, cleanup=null;   // không khoá bước: học sinh đi tự do giữa các bước
 function buildSteps(){
@@ -497,7 +514,7 @@ const finished=new Set();
 function unlock(i){ finished.add(i-1); buildSteps(); }   // gọi khi hoàn thành hoạt động i-1: đánh dấu xong, nút ▶ nhấp nháy
 function go(i){
   if(cleanup){cleanup(); cleanup=null;}
-  if('speechSynthesis' in window) speechSynthesis.cancel();
+  stopVoice();
   cur=i;
   $('#stage').classList.toggle('wide', !!ACTS[i].wide);
   $$('#tools .xt').forEach(e=>e.remove());
@@ -530,7 +547,7 @@ function act1a(P, V){
     <div><button class="qbtn alt hide" id="a-redo">↺ Xem lại thí nghiệm</button></div>
   </div>
   <div class="card hide" id="a-q"></div>`;
-  say('Thomas Hunt Morgan là người đầu tiên phát hiện hiện tượng di truyền liên kết trên ruồi giấm vào năm 1910. Chúng mình cùng làm lại thí nghiệm của ông nhé. <b>Bước 1:</b> em kéo ruồi thân xám, cánh dài và ruồi thân đen, cánh cụt vào hộp lai. Đó là thế hệ P thuần chủng.');
+  say('Thomas Hunt Morgan là người đầu tiên phát hiện hiện tượng di truyền liên kết trên ruồi giấm vào năm 1910. Chúng mình cùng làm lại thí nghiệm của ông nhé. <b>Bước 1:</b> em kéo ruồi thân xám, cánh dài và ruồi thân đen, cánh cụt vào hộp lai. Đó là thế hệ P thuần chủng.','p');
   let phase=1, b;
   function setup(cards, sub){
     $('#a-tray').innerHTML='';
@@ -542,7 +559,7 @@ function act1a(P, V){
     if(phase===1){
       $('#b-p').classList.add('show');
       setTimeout(()=>$('#b-f1')?.classList.add('show'),500);
-      say('<b>F1</b> xuất hiện: 100% ruồi thân xám, cánh dài. Vậy thân xám và cánh dài là tính trạng trội, thân đen và cánh cụt là tính trạng lặn. <b>Bước 2:</b> em kéo ruồi đực F1 và ruồi cái thân đen, cánh cụt vào hộp lai. Đây gọi là lai phân tích.');
+      say('<b>F1</b> xuất hiện: 100% ruồi thân xám, cánh dài. Vậy thân xám và cánh dài là tính trạng trội, thân đen và cánh cụt là tính trạng lặn. <b>Bước 2:</b> em kéo ruồi đực F1 và ruồi cái thân đen, cánh cụt vào hộp lai. Đây gọi là lai phân tích.','f1');
       setTimeout(()=>{ if(!document.body.contains(P)) return;   // đã chuyển sang bước khác
         phase=2; $('#a-h').textContent='Bước 2: Lai phân tích'; $('#a-steps').textContent='Bước 2/2';
         setup([{id:'f1',html:F_XD(true).replace('Thân xám, cánh dài','♂ F1: xám, dài'),cls:'flyc'},{id:'cd',html:F_DC(true).replace('Thân đen, cánh cụt','♀ đen, cụt'),cls:'flyc'}],'Kéo ruồi đực F1 và ruồi cái thân đen, cánh cụt vào hộp lai phân tích.'); },1400);
@@ -551,7 +568,7 @@ function act1a(P, V){
       setTimeout(()=>$('#b-fa')?.classList.add('show'),500);
       $('#a-steps').textContent='Đã xong 2/2';
       $('#a-redo').classList.remove('hide');
-      say('<b>Kết quả:</b> ở thế hệ Fa, có 50% ruồi thân xám, cánh dài và 50% ruồi thân đen, cánh cụt. Em trả lời <b>câu hỏi 1</b> nhé.');
+      say('<b>Kết quả:</b> ở thế hệ Fa, có 50% ruồi thân xám, cánh dài và 50% ruồi thân đen, cánh cụt. Em trả lời <b>câu hỏi 1</b> nhé.','fa');
       const q=$('#a-q'); q.classList.remove('hide');
       quiz(q,{q:'Câu hỏi 1: Phép lai trên gồm những tính trạng nào? (chọn nhiều đáp án)',multi:true,
         opts:['Màu sắc thân','Kích thước cánh','Màu mắt','Tuổi thọ'],correct:[0,1],
@@ -591,7 +608,7 @@ function act1b(P, V){
     <div class="fb" id="b-fb"></div>
   </div>
   <div class="card hide" id="b-q"></div>`;
-  say('Bây giờ em đóng vai nhà khoa học nhé. Nếu hai tính trạng này phân li độc lập (theo quy luật của Mendel) thì ruồi đực F1 sẽ cho 4 loại giao tử. Khi đó kết quả lai phân tích sẽ ra sao? Em hãy kéo các thẻ vào bảng so sánh.');
+  say('Bây giờ em đóng vai nhà khoa học nhé. Nếu hai tính trạng này phân li độc lập (theo quy luật của Mendel) thì ruồi đực F1 sẽ cho 4 loại giao tử. Khi đó kết quả lai phân tích sẽ ra sao? Em hãy kéo các thẻ vào bảng so sánh.','mendel');
   const cards=[
     {id:'n4',html:'4 kiểu hình'},{id:'n2',html:'2 kiểu hình'},{id:'n3',html:'3 kiểu hình'},
     {id:'t4',html:'1 : 1 : 1 : 1'},{id:'t2',html:'1 : 1'},
@@ -604,7 +621,7 @@ function act1b(P, V){
       b.lock(); $('#b-check').disabled=true;
       fbShow(fb,'ok','<b>Chính xác!</b> Theo Mendel, ruồi đực F1 cho 4 loại giao tử, nên sẽ có 4 kiểu hình với tỉ lệ 1 : 1 : 1 : 1. Nhưng thực tế Morgan chỉ thu được 2 kiểu hình với tỉ lệ 1 : 1. <b>Kết quả thực tế khác dự đoán của Mendel.</b>');
       $('#b-reveal').classList.remove('hide');
-      say('Em hãy trả lời <b>câu hỏi 3</b>: em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?');
+      say('Em hãy trả lời <b>câu hỏi 3</b>: em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?','q3');
       const q=$('#b-q'); q.classList.remove('hide');
       quiz(q,{q:'Câu hỏi 3: Em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?',
         opts:['Thân xám luôn đi cùng cánh dài, thân đen luôn đi cùng cánh cụt; hai cặp gene không phân li độc lập','Thân xám luôn đi cùng cánh cụt','Hai tính trạng phân li độc lập'],correct:[0],
@@ -640,7 +657,7 @@ function act1c(P, V){
     <div id="c-out"></div>
   </div>
   <div class="card hide" id="c-q"></div>`;
-  say('Vì sao kết quả của Morgan lại như vậy? Chúng mình cùng nhìn vào bên trong tế bào nhé! Em chạm nhãn <b>“Cặp NST tương đồng của F1”</b> để phóng to.');
+  say('Vì sao kết quả của Morgan lại như vậy? Chúng mình cùng nhìn vào bên trong tế bào nhé! Em chạm nhãn <b>“Cặp NST tương đồng của F1”</b> để phóng to.','cell');
   const tools=$('#tools');
   const mk=(id,t,fn)=>{ const b=document.createElement('button'); b.className='ghost xt'; b.id=id; b.textContent=t; b.onclick=fn; tools.appendChild(b); return b; };
   if(typeof THREE==='undefined' || !THREE.OrbitControls){
@@ -743,9 +760,9 @@ function act1c(P, V){
     addTag('t2','Hai cặp gene Bb, Vv',anchor(root,0,-2.4),[anchor(root,0,LV),anchor(root,0,LB)],'b');
     tags.t2.el.style.display = explored.has(1)||DEV ? '' : 'none';
     tags.t1.el.onclick=()=>{ explored.add(1); tags.t1.el.classList.add('done'); tags.t2.el.style.display=''; flyTo(fitPos(2.4,2.9));
-      say('Em thấy không, cặp gene <b>Bb</b> và cặp gene <b>Vv</b> cùng nằm trên một cặp NST tương đồng: một NST mang B và V, NST còn lại mang b và v. Em chạm tiếp nhãn <b>“Hai cặp gene Bb, Vv”</b> nhé.'); upd(); };
+      say('Em thấy không, cặp gene <b>Bb</b> và cặp gene <b>Vv</b> cùng nằm trên một cặp NST tương đồng: một NST mang B và V, NST còn lại mang b và v. Em chạm tiếp nhãn <b>“Hai cặp gene Bb, Vv”</b> nhé.','pair'); upd(); };
     tags.t2.el.onclick=()=>{ explored.add(2); tags.t2.el.classList.add('done'); flyTo(fitPos(2.2,2.9)); pulse=1.8;
-      say('Hai vị trí gene được làm sáng trên <b>cùng một cặp NST</b>. Bây giờ em bấm nút <b>“Giảm phân”</b>.'); upd(); };
+      say('Hai vị trí gene được làm sáng trên <b>cùng một cặp NST</b>. Bây giờ em bấm nút <b>“Giảm phân”</b>.','genes'); upd(); };
     if(explored.has(1)) tags.t1.el.classList.add('done');
     if(explored.has(2)) tags.t2.el.classList.add('done');
   }
@@ -782,7 +799,7 @@ function act1c(P, V){
   buildLink(); upd();
 
   $('#c-meio').onclick=()=>{ if(meiosis>=1) meiosis=0; playing=!playing; if(playing&&meiosis===0&&mode==='indep') arrange=Math.random()<.5?0:1; if(playing) flyTo(homePos());
-    if(playing && meiosis<.05) say(mode==='link'?'Hai NST của cặp tương đồng <b>phân li về hai tế bào con</b>. Vì B và V cùng nằm trên một NST nên đi cùng nhau, b và v cũng vậy.':'Lúc này hai cặp gene nằm trên hai cặp NST khác nhau nên các NST <b>phân li độc lập</b> với nhau.'); upd(); };
+    if(playing && meiosis<.05) say(mode==='link'?'Hai NST của cặp tương đồng <b>phân li về hai tế bào con</b>. Vì B và V cùng nằm trên một NST nên đi cùng nhau, b và v cũng vậy.':'Lúc này hai cặp gene nằm trên hai cặp NST khác nhau nên các NST <b>phân li độc lập</b> với nhau.',mode==='link'?'meioL':'meioI'); upd(); };
   $('#c-replay').onclick=()=>{ meiosis=0; playing=true; if(mode==='indep') arrange=Math.random()<.5?0:1; $('#c-out').innerHTML=''; flyTo(homePos()); upd(); };
   $('#c-slow').onclick=()=>{ slow=!slow; upd(); };
   $('#c-fert').onclick=()=>{
@@ -792,12 +809,12 @@ function act1c(P, V){
       <div>${F_DC(true,'sm')}<b>bv/bv</b><div class="count">thân đen, cánh cụt</div></div></div>
       <div class="bar"><span style="width:50%;background:#7b8791">1</span><span style="width:50%;background:#2b2b2b">1</span></div>
       <div class="fb show ok" style="margin-top:8px">Chỉ có hai kiểu tổ hợp, tỉ lệ 1 : 1 – đúng với kết quả Fa mà Morgan thu được.</div>`;
-    say('Chỉ có hai kiểu tổ hợp: <b>BV/bv</b> thân xám, cánh dài và <b>bv/bv</b> thân đen, cánh cụt, tỉ lệ 1 : 1. Còn nếu hai cặp gene nằm trên hai cặp NST khác nhau thì sao? Em bấm nút <b>“So sánh”</b>.');
+    say('Chỉ có hai kiểu tổ hợp: <b>BV/bv</b> thân xám, cánh dài và <b>bv/bv</b> thân đen, cánh cụt, tỉ lệ 1 : 1. Còn nếu hai cặp gene nằm trên hai cặp NST khác nhau thì sao? Em bấm nút <b>“So sánh”</b>.','fert');
     $('#c-out').scrollIntoView({behavior:'smooth',block:'nearest'});
   };
   $('#c-cmp').onclick=()=>{
     playing=false; meiosis=0; $('#c-out').innerHTML='';
-    if(mode==='link'){ buildIndep(); say('Em bấm <b>“Giảm phân”</b> để xem. Lúc này F1 cho <b>4 loại giao tử</b> là BV, Bv, bV, bv. Đó chính là phân li độc lập theo quy luật của Mendel.'); showQ(); }
+    if(mode==='link'){ buildIndep(); say('Em bấm <b>“Giảm phân”</b> để xem. Lúc này F1 cho <b>4 loại giao tử</b> là BV, Bv, bV, bv. Đó chính là phân li độc lập theo quy luật của Mendel.','indep'); showQ(); }
     else { buildLink(); }
     flyTo(cellPos()); upd();
   };
@@ -821,7 +838,7 @@ function act1c(P, V){
   function frame(now){
     raf=requestAnimationFrame(frame); const dt=Math.min((now-last)/1000,.05); last=now;
     if(playing){ meiosis=Math.min(1,meiosis+dt/(slow?14:6)); if(meiosis>=1){ playing=false; meioDone=true;
-        if(mode==='link') say('Do đó F1 chỉ tạo hai loại giao tử là <b>BV</b> và <b>bv</b>. Em bấm <b>“Thụ tinh với giao tử bv của ruồi cái”</b> nhé.');
+        if(mode==='link') say('Do đó F1 chỉ tạo hai loại giao tử là <b>BV</b> và <b>bv</b>. Em bấm <b>“Thụ tinh với giao tử bv của ruồi cái”</b> nhé.','gam2');
         else indepOut(); upd(); } }
     const e=ease(meiosis);
     if(mode==='link'){
@@ -868,21 +885,90 @@ function act1c(P, V){
   return ()=>{ cancelAnimationFrame(raf); ro.disconnect(); ro2.disconnect(); renderer.dispose(); controls.dispose(); V.style.cssText=''; };
 }
 
+/* ============ Cảnh 3D minh hoạ dùng chung cho bước 4, 5 (tự chạy lặp giảm phân) ============ */
+// units: [{type:'link'|'indep', y, title}] ; trả về hàm dọn dẹp
+function mini3D(V, units, halfW, halfH){
+  V.className='v3d'; V.style.cssText='position:absolute;inset:0;z-index:0;overflow:hidden;display:block'; V.innerHTML='';
+  if(typeof THREE==='undefined' || !THREE.OrbitControls){
+    V.innerHTML='<div style="position:absolute;inset:0;display:grid;place-items:center;color:#fff;padding:20px;text-align:center">Không tải được thư viện 3D (Three.js). Hãy kiểm tra kết nối mạng rồi tải lại trang.</div>';
+    return ()=>{ V.style.cssText=''; };
+  }
+  const host=V, wideStage=()=>$('#stage').classList.contains('wide');
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); host.appendChild(renderer.domElement);
+  const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(45,1,.1,200);
+  const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.enablePan=false; controls.minDistance=4; controls.maxDistance=60;
+  scene.add(new THREE.AmbientLight(0xffffff,.75)); const dl=new THREE.DirectionalLight(0xffffff,.8); dl.position.set(4,6,8); scene.add(dl);
+  scene.add(new THREE.HemisphereLight(0xe8fbff,0x1b4d4a,.35));
+  const mat=c=>new THREE.MeshPhongMaterial({color:c,shininess:70,specular:0x2a2a2a});
+  function rodGeo(len,r,cen){ const pts=[],N=60,h=len/2;
+    for(let i=0;i<=N;i++){ const y=-h+len*i/N; let rad=r; const d=Math.abs(y)-(h-r); if(d>0) rad=r*Math.sqrt(Math.max(0,1-(d/r)**2));
+      rad*=1-.42*Math.exp(-(((y-cen)/(r*.9))**2)); pts.push(new THREE.Vector2(Math.max(rad,1e-4),y)); }
+    return new THREE.LatheGeometry(pts,36); }
+  function chromo(color,len,cen){ const g=new THREE.Group(); g.add(new THREE.Mesh(rodGeo(len,.27,cen),mat(color))); return g; }
+  function band(p,y,c){ const m=new THREE.Mesh(new THREE.CylinderGeometry(.31,.31,.26,36),mat(c)); m.position.y=y; p.add(m); return m; }
+  function cell(r,x,y,op){ const m=new THREE.Mesh(new THREE.SphereGeometry(r,48,32),new THREE.ShaderMaterial({transparent:true,depthWrite:false,
+      uniforms:{uOp:{value:op},uCol:{value:new THREE.Color(0xc4f1f6)}},
+      vertexShader:'varying vec3 vN;varying vec3 vV;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}',
+      fragmentShader:'uniform float uOp;uniform vec3 uCol;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.-abs(dot(vN,vV)),2.4);gl_FragColor=vec4(uCol,(.06+.8*f)*uOp);}'}));
+    m.position.set(x,y,0); return m; }
+  const RED=0xd7473c, BLU=0x3a78e0, GOLD=0xffc93c, VIO=0xa66be0;
+  const labels=[];
+  function lbl(obj,text,cls,dx=0){ const e=document.createElement('div'); e.className='lbl '+cls; e.textContent=text; host.appendChild(e); const l={obj,el:e,dx}; labels.push(l); return l; }
+  function anchor(p,x,y){ const o=new THREE.Object3D(); o.position.set(x,y,0); p.add(o); return o; }
+  const U=units.map(u=>{
+    const g=new THREE.Group(); g.position.y=u.y||0; scene.add(g);
+    const main=cell(3.1,0,0,1), kids=[cell(1.95,-3.8,0,0),cell(1.95,3.8,0,0)]; g.add(main,...kids);
+    const o={u,g,main,kids,chs:[],arrange:0};
+    const gl=t=>[[t[0],'g',-30],[t[1],'g',30]];
+    if(u.type==='link'){
+      const R=chromo(RED,3.4,.2), B=chromo(BLU,3.4,.2); R.position.x=-.55; B.position.x=.55; g.add(R,B);
+      lbl(band(R,.95,GOLD),'B','g',-30); lbl(band(R,-.8,VIO),'V','g',-30); lbl(band(B,.95,GOLD),'b','g',30); lbl(band(B,-.8,VIO),'v','g',30);
+      o.chs=[{c:R,x0:-.55,y0:0,s:-1},{c:B,x0:.55,y0:0,s:1}];
+    } else {
+      const A1=chromo(RED,1.9,.35),A2=chromo(BLU,1.9,.35),V1=chromo(RED,1.6,-.3),V2=chromo(BLU,1.6,-.3);
+      A1.position.set(-.55,1.3,0);A2.position.set(.55,1.3,0);V1.position.set(-.55,-1.3,0);V2.position.set(.55,-1.3,0); g.add(A1,A2,V1,V2);
+      lbl(band(A1,-.35,GOLD),'B','g',-30); lbl(band(A2,-.35,GOLD),'b','g',30); lbl(band(V1,.3,VIO),'V','g',-30); lbl(band(V2,.3,VIO),'v','g',30);
+      o.chs=[{c:A1,x0:-.55,y0:1.3,s:-1},{c:A2,x0:.55,y0:1.3,s:1},{c:V1,x0:-.55,y0:-1.3,s:-1,v:1},{c:V2,x0:.55,y0:-1.3,s:1,v:1}];
+    }
+    if(u.title) lbl(anchor(g,0,3.55),u.title,'gam');
+    o.gL=lbl(anchor(kids[0],0,2.3),'Giao tử BV','gam'); o.gR=lbl(anchor(kids[1],0,2.3),'Giao tử bv','gam');
+    return o;
+  });
+  const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  let paused=false, t=0, raf, last=performance.now();
+  const CYCLE=10; // 1.5s đứng yên, 6s giảm phân, 2.5s giữ kết quả
+  const btn=document.createElement('button'); btn.className='ghost xt'; btn.textContent='⏸ Tạm dừng'; btn.onclick=()=>{ paused=!paused; btn.textContent=paused?'▶ Chạy tiếp':'⏸ Tạm dừng'; }; $('#tools').appendChild(btn);
+  const shiftPx=()=>{ const w=host.clientWidth; if(innerWidth<=900) return 0; return (wideStage()? w*.5 : Math.min(540,w*.46))+72; };
+  function fit(){ const w=host.clientWidth||800,h=host.clientHeight||600, wide=innerWidth>900, lw=Math.max(220,w-shiftPx()), lh=wide?h:h*.5-16;
+    camera.position.set(0,0,Math.max(halfW/(0.4142*lw/h),halfH/(0.4142*lh/h))); controls.target.set(0,0,0); }
+  function resize(){ const w=host.clientWidth,h=host.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); camera.aspect=w/h;
+    const wide=innerWidth>900; camera.setViewOffset(w,h,shiftPx()/2, wide?0:(h*.5+16)/2, w,h); camera.updateProjectionMatrix(); }
+  const ro=new ResizeObserver(()=>{ resize(); fit(); }); ro.observe(host); resize(); fit();
+  const v=new THREE.Vector3();
+  function frame(now){
+    raf=requestAnimationFrame(frame); const dt=Math.min((now-last)/1000,.05); last=now;
+    if(!paused){ const nt=(t+dt)%CYCLE; if(nt<t) U.forEach(o=>o.arrange^=1); t=nt; }
+    const e=ease(Math.min(1,Math.max(0,(t-1.5)/6)));
+    U.forEach(o=>{
+      o.chs.forEach(k=>{ let s=k.s; if(k.v&&o.arrange) s=-s;
+        k.c.position.x = s<0 ? -.55-3.25*e : .55+3.25*e;
+        if(k.v && o.arrange) k.c.position.x = k.s<0 ? -.55+4.35*e : .55-4.35*e;
+        if(o.u.type==='indep') k.c.position.y = k.y0>0 ? 1.3-.45*e : -1.3+.45*e; });
+      if(o.u.type==='indep'){ o.gL.el.textContent='Giao tử '+(o.arrange?'Bv':'BV'); o.gR.el.textContent='Giao tử '+(o.arrange?'bV':'bv'); }
+      o.gL.el.style.opacity=o.gR.el.style.opacity=e>.95?1:0;
+      o.main.material.uniforms.uOp.value=1-Math.min(1,e*1.6); o.kids.forEach(k=>k.material.uniforms.uOp.value=Math.max(0,(e-.35)/.65));
+    });
+    controls.update(); renderer.render(scene,camera);
+    const w=host.clientWidth,h=host.clientHeight;
+    labels.forEach(l=>{ l.obj.getWorldPosition(v); v.project(camera); l.el.style.left=((v.x*.5+.5)*w+l.dx)+'px'; l.el.style.top=((-v.y*.5+.5)*h)+'px'; });
+  }
+  raf=requestAnimationFrame(frame);
+  return ()=>{ cancelAnimationFrame(raf); ro.disconnect(); renderer.dispose(); controls.dispose(); V.style.cssText=''; };
+}
+
 /* ============ 1d – Khái niệm ============ */
 function act1d(P, V){
-  V.innerHTML = `<div class="vcard"><h4>Hai gene trên cùng một NST di truyền cùng nhau</h4>
-    <svg viewBox="0 0 420 250" style="width:100%;max-height:300px" role="img" aria-label="Cặp NST tương đồng mang gene B, V và b, v phân li cùng nhau khi giảm phân">
-      ${chrom(70,25,150,'#d7392f',[{dy:45,color:'#f0a020',label:'B',side:-1},{dy:105,color:'#7b3fb5',label:'V',side:-1}])}
-      ${chrom(120,25,150,'#2f6fdc',[{dy:45,color:'#f8dc9a',label:'b',side:1},{dy:105,color:'#cdb0ea',label:'v',side:1}])}
-      <text x="95" y="205" text-anchor="middle" font-size="12" fill="#5f8b89">Cặp NST tương đồng của F1</text>
-      <path d="M170 100h60" stroke="#5f8b89" stroke-width="2.5" marker-end="url(#ar1)"/>
-      <defs><marker id="ar1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="#5f8b89"/></marker></defs>
-      <text x="200" y="88" text-anchor="middle" font-size="11" fill="#5f8b89">giảm phân</text>
-      ${chrom(280,25,100,'#d7392f',[{dy:30,color:'#f0a020',label:'B',side:-1},{dy:70,color:'#7b3fb5',label:'V',side:-1}])}
-      ${chrom(360,25,100,'#2f6fdc',[{dy:30,color:'#f8dc9a',label:'b',side:1},{dy:70,color:'#cdb0ea',label:'v',side:1}])}
-      <text x="280" y="152" text-anchor="middle" font-size="13" font-weight="700" fill="#10302d">Giao tử BV</text>
-      <text x="360" y="152" text-anchor="middle" font-size="13" font-weight="700" fill="#10302d">Giao tử bv</text>
-    </svg></div>`;
+  const stop3d = mini3D(V,[{type:'link',title:'Cặp NST tương đồng của F1: B và V cùng nằm trên một NST'}],6.4,4.4);
   P.innerHTML = `
   <h2>Khái niệm di truyền liên kết</h2>
   <div class="card">
@@ -900,7 +986,7 @@ function act1d(P, V){
     <p>Di truyền liên kết là hiện tượng các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau trong quá trình giảm phân.</p>
     <p style="margin-top:6px"><b>Ptc → F1 → Fa:</b> 1 thân xám, cánh dài : 1 thân đen, cánh cụt.</p>
     <p style="margin-top:6px">Di truyền liên kết hoàn toàn <b>làm hạn chế biến dị tổ hợp</b>.</p></div>`;
-  say('Từ thí nghiệm của Morgan, em hãy hoàn thành khái niệm: chọn từ thích hợp cho 3 chỗ trống rồi bấm <b>Kiểm tra</b>.');
+  say('Từ thí nghiệm của Morgan, em hãy hoàn thành khái niệm: chọn từ thích hợp cho 3 chỗ trống rồi bấm <b>Kiểm tra</b>.','concept');
   const ans=['gene','nhiễm sắc thể','giảm phân'];
   $('#d-check').onclick=()=>{
     let all=true;
@@ -910,29 +996,16 @@ function act1d(P, V){
       fbShow(fb,'ok','<b>Chính xác!</b> Di truyền liên kết là hiện tượng các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau trong quá trình giảm phân.');
       $$('select',P).forEach(s=>s.disabled=true); $('#d-check').disabled=true;
       $('#d-box').classList.remove('hide');
-      say('Chính xác! Di truyền liên kết hoàn toàn làm <b>hạn chế biến dị tổ hợp</b>. Em bấm ▶ để so sánh di truyền liên kết với phân li độc lập.');
+      say('Chính xác! Di truyền liên kết hoàn toàn làm <b>hạn chế biến dị tổ hợp</b>. Em bấm ▶ để so sánh di truyền liên kết với phân li độc lập.','conceptOk');
       unlock(4);
     } else fbShow(fb,'no','Có chỗ chưa đúng, chỗ sai được tô đỏ, em xem lại hoạt ảnh giảm phân và chọn lại nhé.');
   };
+  return stop3d;
 }
 
 /* ============ 1e – So sánh hai quy luật ============ */
 function act1e(P, V){
-  V.innerHTML = `<div class="vrow">
-    <div class="vcard"><h4 style="color:var(--blue)">Liên kết gene</h4>
-      <svg viewBox="0 0 170 190" style="width:100%;max-height:230px" role="img" aria-label="Hai cặp gene trên cùng một cặp NST">
-        ${chrom(55,15,140,'#d7392f',[{dy:40,color:'#f0a020',label:'B',side:-1},{dy:100,color:'#7b3fb5',label:'V',side:-1}])}
-        ${chrom(105,15,140,'#2f6fdc',[{dy:40,color:'#f8dc9a',label:'b',side:1},{dy:100,color:'#cdb0ea',label:'v',side:1}])}
-        <text x="80" y="182" text-anchor="middle" font-size="11" fill="#5f8b89">1 cặp NST</text></svg>
-      <div class="count">Hai cặp gene cùng nằm trên một cặp NST tương đồng</div></div>
-    <div class="vcard"><h4 style="color:var(--orange)">Phân li độc lập</h4>
-      <svg viewBox="0 0 170 190" style="width:100%;max-height:230px" role="img" aria-label="Hai cặp gene trên hai cặp NST khác nhau">
-        ${chrom(40,15,70,'#d7392f',[{dy:35,color:'#f0a020',label:'B',side:-1}])}
-        ${chrom(75,15,70,'#2f6fdc',[{dy:35,color:'#f8dc9a',label:'b',side:1}])}
-        ${chrom(40,105,70,'#d7392f',[{dy:35,color:'#7b3fb5',label:'V',side:-1}])}
-        ${chrom(75,105,70,'#2f6fdc',[{dy:35,color:'#cdb0ea',label:'v',side:1}])}
-        <text x="58" y="186" text-anchor="middle" font-size="11" fill="#5f8b89">2 cặp NST</text></svg>
-      <div class="count">Hai cặp gene nằm trên các cặp NST tương đồng khác nhau</div></div></div>`;
+  const stop3d = mini3D(V,[{type:'link',y:4.2,title:'Liên kết gene: 1 cặp NST → 2 loại giao tử'},{type:'indep',y:-4.8,title:'Phân li độc lập: 2 cặp NST → 4 loại giao tử'}],6.4,10.2);
   P.innerHTML = `
   <h2>So sánh liên kết gene và phân li độc lập</h2>
   <div class="card" id="e-card">
@@ -948,7 +1021,7 @@ function act1e(P, V){
     <div class="fb" id="e-fb"></div>
   </div>
   <div class="card hide" id="e-bonus"></div>`;
-  say('Bây giờ em hãy phân biệt di truyền liên kết với phân li độc lập bằng cách hoàn thành <b>bảng so sánh</b> dưới đây. Em kéo các thẻ vào đúng ô.');
+  say('Bây giờ em hãy phân biệt di truyền liên kết với phân li độc lập bằng cách hoàn thành <b>bảng so sánh</b> dưới đây. Em kéo các thẻ vào đúng ô.','table');
   const cards=[
     {id:'a1',html:'Các tính trạng di truyền cùng nhau'},{id:'b1',html:'Các tính trạng di truyền riêng rẽ'},
     {id:'a2',html:'Các cặp gene cùng nằm trên một cặp NST tương đồng'},{id:'b2',html:'Các cặp gene nằm trên các cặp NST tương đồng khác nhau'},
@@ -960,7 +1033,7 @@ function act1e(P, V){
     if(b.check()){
       b.lock(); $('#e-check').disabled=true;
       fbShow(fb,'ok','<b>Chính xác!</b> <b>Liên kết gene:</b> các tính trạng di truyền cùng nhau, các cặp gene cùng nằm trên một cặp NST tương đồng, hạn chế biến dị tổ hợp. <b>Phân li độc lập:</b> các tính trạng di truyền riêng rẽ, các cặp gene nằm trên các cặp NST khác nhau, làm xuất hiện nhiều biến dị tổ hợp.');
-      say('Câu thêm: ý nghĩa của hai quy luật này là gì? Em ghép mỗi quy luật với ý nghĩa của nó.');
+      say('Câu thêm: ý nghĩa của hai quy luật này là gì? Em ghép mỗi quy luật với ý nghĩa của nó.','meaning');
       const bo=$('#e-bonus'); bo.classList.remove('hide');
       bo.innerHTML=`<span class="chip">Ý nghĩa</span><h3>Ghép mỗi quy luật với ý nghĩa của nó</h3>
         <div class="slots2"><div><div class="count" style="color:var(--blue);font-weight:700">Liên kết gene</div><div class="slot" data-cell="m1" style="margin-top:4px">Thả thẻ</div></div>
@@ -973,33 +1046,9 @@ function act1e(P, V){
       setTimeout(()=>bo.scrollIntoView({behavior:'smooth',block:'nearest'}),300);
     } else fbShow(fb,'no','Có ô chưa đúng, em xem lại hoạt ảnh giảm phân ở bước Giải thích rồi thử lại nhé.');
   };
+  return stop3d;
 }
 
-/* ============ 1f – Ghi nhớ ============ */
-function act1f(P, V){
-  V.innerHTML = `<div class="vcard"><h4>Em có biết? Hoán vị gene</h4>
-    <svg viewBox="0 0 360 140" style="width:100%;max-height:220px" role="img" aria-label="Hai NST tương đồng đổi chỗ một đoạn gene">
-      <g stroke="#333" stroke-width="1"><rect x="15" y="20" width="130" height="20" rx="10" fill="#d7392f"/><rect x="15" y="60" width="130" height="20" rx="10" fill="#2f6fdc"/>
-      <rect x="55" y="20" width="32" height="20" fill="#f0a020"/><rect x="55" y="60" width="32" height="20" fill="#f8dc9a"/></g>
-      <path d="M150 50h56" stroke="#5f8b89" stroke-width="2.5" marker-end="url(#ar)"/>
-      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="#5f8b89"/></marker></defs>
-      <g stroke="#333" stroke-width="1"><rect x="215" y="20" width="130" height="20" rx="10" fill="#d7392f"/><rect x="215" y="60" width="130" height="20" rx="10" fill="#2f6fdc"/>
-      <rect x="255" y="20" width="32" height="20" fill="#f8dc9a"/><rect x="255" y="60" width="32" height="20" fill="#f0a020"/></g>
-      <text x="15" y="112" font-size="11" fill="#5f8b89">Trước khi đổi chỗ đoạn gene</text><text x="215" y="112" font-size="11" fill="#5f8b89">Sau khi đổi chỗ (hoán vị gene)</text></svg>
-    <p style="margin:6px 0 0;font-size:14px">Ở nhiều trường hợp, các gene nằm trên cùng một NST cũng có thể đổi chỗ cho nhau, gọi là <b>hoán vị gene</b>.</p></div>`;
-  P.innerHTML = `
-  <h2>Ghi nhớ</h2>
-  <div class="kcard"><div class="kh"><span class="dot"></span>Ghi nhớ</div>
-    <ul>
-      <li><b>Thí nghiệm của Morgan:</b> P thuần chủng thân xám, cánh dài × thân đen, cánh cụt cho F1 100% thân xám, cánh dài; lai phân tích ruồi đực F1 với ruồi cái thân đen, cánh cụt cho Fa gồm 1 thân xám, cánh dài : 1 thân đen, cánh cụt.</li>
-      <li><b>Di truyền liên kết</b> là hiện tượng các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau.</li>
-      <li>Di truyền liên kết hoàn toàn <b>làm hạn chế biến dị tổ hợp</b>.</li></ul></div>
-  <div class="card"><span class="chip">Trả lời câu hỏi</span>
-    <p style="margin:6px 0 0"><b>Vì sao ở ruồi giấm, thân xám luôn đi cùng cánh dài, thân đen luôn đi cùng cánh cụt?</b></p>
-    <p style="margin:6px 0 0">Vì gene quy định màu thân và gene quy định chiều dài cánh cùng nằm trên một nhiễm sắc thể, nên chúng phân li cùng nhau khi giảm phân. Đó chính là hiện tượng <b>di truyền liên kết</b>.</p></div>`;
-  say('Cô chốt lại nhé! Hiện tượng thân xám đi cùng cánh dài, thân đen đi cùng cánh cụt chính là <b>di truyền liên kết</b>. Em có biết: ở nhiều trường hợp, các gene nằm trên cùng một NST cũng có thể đổi chỗ cho nhau, gọi là hoán vị gene.');
-  unlock(6);
-}
 
 go(0);
 </script>
