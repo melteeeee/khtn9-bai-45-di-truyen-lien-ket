@@ -413,7 +413,7 @@ const frac = (g,cls='') => { const [a,b]=g.split('/'); return `<span class="frac
 const HORD = ['AB','Ab','aB','ab'];
 const canon = (h1,h2) => HORD.indexOf(h1)<=HORD.indexOf(h2) ? h1+'/'+h2 : h2+'/'+h1;
 
-// các phép lai, liên kết hoàn toàn: mỗi cơ thể cho đúng 2 loại giao tử (chính là 2 nhiễm sắc thể của nó)
+// các phép lai, liên kết hoàn toàn: mỗi cơ thể dị hợp cho đúng 2 loại giao tử (chính là 2 nhiễm sắc thể trong cặp tương đồng)
 const CROSSES = {
   A:[['Ab','aB'],['Ab','aB']],
   B:[['Ab','aB'],['Ab','ab']],
@@ -461,7 +461,7 @@ function act3a(P, V){
   <h2>Bài tập cà chua</h2>
   <div class="card">
     <span class="chip">Đề bài</span><span class="counter" id="x-cnt">Đã thử 0/4 phép lai</span>
-    <p style="margin:6px 0 0;font-size:14.5px">Một giống cà chua có allele <b>A</b> quy định thân cao, <b>a</b> quy định thân thấp, <b>B</b> quy định quả tròn, <b>b</b> quy định quả bầu dục; các gene <b>liên kết hoàn toàn</b>. Phép lai nào dưới đây cho <b>tỉ lệ kiểu gene và tỉ lệ kiểu hình giống nhau</b>?</p>
+    <p style="margin:6px 0 0;font-size:14.5px">Một giống cà chua có allele <b>A</b> quy định thân cao, <b>a</b> quy định thân thấp, <b>B</b> quy định quả tròn, <b>b</b> quy định quả bầu dục; các allele trội là <b>trội hoàn toàn</b>, các gene <b>liên kết hoàn toàn</b>. Phép lai nào dưới đây cho <b>tỉ lệ kiểu gene và tỉ lệ kiểu hình giống nhau</b>?</p>
     <div class="opts g2" id="x-opts">${Object.keys(CROSSES).map(k=>`
       <button class="opt xopt" type="button" data-k="${k}" aria-label="Phép lai ${k}"><i>${k}</i><span class="xr">${frac(crossName(k)[0])}<span class="x">×</span>${frac(crossName(k)[1])}</span><span class="mark"></span></button>`).join('')}</div>
     <div><button class="qbtn" id="x-run" type="button" disabled>Chạy phép lai</button></div>
@@ -472,11 +472,11 @@ function act3a(P, V){
     <div class="badges"><span class="badge2">✓ Viết giao tử</span><span class="badge2">✓ Lập bảng Punnett</span><span class="badge2">✓ So sánh tỉ lệ</span></div>
     <p style="margin:8px 0 0;font-size:14px">Em có thể chọn thêm các phép lai còn lại, bấm <b>Chạy phép lai</b> để so sánh. Em đã hoàn thành phần Vận dụng!</p>
   </div>`;
-  say('Một giống cà chua có allele A quy định thân cao, a quy định thân thấp, B quy định quả tròn, b quy định quả bầu dục; các gene liên kết hoàn toàn. Phép lai nào dưới đây cho tỉ lệ kiểu gene và tỉ lệ kiểu hình giống nhau? Em hãy chọn một phép lai rồi bấm <b>“Chạy phép lai”</b> để xem kết quả nhé.','tomato');
+  say('Một giống cà chua có allele A quy định thân cao, a quy định thân thấp, B quy định quả tròn, b quy định quả bầu dục; các allele trội là trội hoàn toàn, các gene liên kết hoàn toàn. Phép lai nào dưới đây cho tỉ lệ kiểu gene và tỉ lệ kiểu hình giống nhau? Em hãy chọn một phép lai rồi bấm <b>“Chạy phép lai”</b> để xem kết quả nhé.','tomato');
 
   // màn hình chờ: giải thích quy ước và 4 kiểu hình
   V.innerHTML = `<div class="vcard"><h4>Giống cà chua</h4>
-      <p class="rule"><b>A</b>: thân cao · <b>a</b>: thân thấp<br><b>B</b>: quả tròn · <b>b</b>: quả bầu dục<br>Hai gene cùng nằm trên một nhiễm sắc thể và <b>liên kết hoàn toàn</b>, nên mỗi cơ thể chỉ cho <b>2 loại giao tử</b>.</p>
+      <p class="rule"><b>A</b>: thân cao · <b>a</b>: thân thấp<br><b>B</b>: quả tròn · <b>b</b>: quả bầu dục (A, B trội hoàn toàn)<br>Hai gene cùng nằm trên một cặp nhiễm sắc thể tương đồng và <b>liên kết hoàn toàn</b>, nên mỗi cơ thể dị hợp chỉ cho <b>2 loại giao tử</b>, mỗi loại chính là 1 nhiễm sắc thể trong cặp.</p>
       <div class="tgrid">${PH4.map(([t,r])=>`<div>${tomatoSVG(t,r)}${phenoName({tall:t,round:r})}</div>`).join('')}</div></div>
     <div class="vcard" id="x-res"><h4>Kết quả phép lai</h4><p class="muted" style="margin:0;font-size:14px">Chọn một phép lai ở bảng Bài học rồi bấm <b>Chạy phép lai</b>.</p></div>`;
 
