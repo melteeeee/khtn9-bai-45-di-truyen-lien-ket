@@ -300,22 +300,16 @@ table.map tr.hl td{background:#eef7c9}
 @keyframes scan{from{left:-60px}to{left:100%}}
 .legend{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;font-weight:600;color:#1f6b3a}
 .mkdot{width:22px;height:10px;border-radius:3px;background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.7);flex:0 0 auto}
-/* 2d */
-.learn{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-top:1px dashed var(--line)}
-.kh+.muted+.learn{border-top:0}
-.learn p{margin:0;font-size:14.5px;line-height:1.6}
-.ico{flex:0 0 42px;height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--brand-soft);display:grid;place-items:center;cursor:pointer;color:var(--brand-dark);transition:background .15s}
-.ico:hover{border-color:var(--brand-light)}
-.ico.on{background:var(--brand);color:#fff;border-color:var(--brand)}
-.ico svg{width:22px;height:22px}
-/* 2e */
-.branch{border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;margin-top:10px;background:#fff}
-.branch .bh{font-size:12.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:center;gap:7px}
-.branch .bh i{width:10px;height:10px;border-radius:50%}
-.bslots{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin-top:6px}
-.bslots .slot{min-height:44px}
-.vcard.mm{padding:8px}
-.vcard.mm svg{width:100%;height:auto;display:block}
+/* 2c – cảnh 3D */
+.lbl.seedtag{background:rgba(255,255,255,.95);color:var(--ink);border-radius:7px;padding:2px 9px;font-size:12px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.25);transition:background .3s}
+.lbl.seedtag.lit{background:#D7F35A;color:#2c3d0a}
+.lbl.seedtag.ok{background:#e3f4e8;color:#1c5a34}
+.lbl.seedtag.bad{background:#fdecea;color:#b3261e}
+.lbl.traytag{background:rgba(15,63,61,.8);border:1.5px solid rgba(255,255,255,.5);border-radius:99px;padding:4px 12px;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+@media (max-width:900px){
+  .lbl.seedtag{font-size:10.5px;padding:1px 6px}
+  .lbl.traytag{font-size:10px;padding:2px 8px}
+}
 </style>
 </head>
 <body>
@@ -325,7 +319,7 @@ table.map tr.hl td{background:#eef7c9}
     <section class="intro-card">
       <div class="intro-kicker">Khoa học tự nhiên 9</div>
       <h1>Ứng dụng di truyền liên kết</h1>
-      <p class="intro-sub">Tìm hiểu ý nghĩa của di truyền liên kết, đóng vai nhà chọn giống ghép nhóm gene tốt trên cùng một nhiễm sắc thể, dùng chỉ thị phân tử để chọn cây lúa kháng bệnh, rồi tổng kết bằng sơ đồ tư duy.</p>
+      <p class="intro-sub">Tìm hiểu ý nghĩa của di truyền liên kết, đóng vai nhà chọn giống ghép nhóm gene tốt trên cùng một nhiễm sắc thể và dùng chỉ thị phân tử để chọn cây lúa kháng bệnh.</p>
       <button id="btnExplore" class="intro-explore" type="button">Bắt đầu</button>
     </section>
     <div class="intro-credit">Được phát triển bởi <strong>YooBook</strong></div>
@@ -555,8 +549,6 @@ const ACTS = [
   {id:'2a', name:'Ý nghĩa', fn:act2a},
   {id:'2b', name:'Em là nhà chọn giống', fn:act2b},
   {id:'2c', name:'Chỉ thị phân tử', fn:act2c},
-  {id:'2d', name:'Ghi nhớ', fn:act2d},
-  {id:'2e', name:'Sơ đồ tư duy', fn:act2e, wide:true},
 ];
 let cur=0, unlocked=ACTS.length-1, cleanup=null;   // không khoá bước: học sinh đi tự do giữa các bước
 const finished=new Set();
@@ -581,6 +573,86 @@ function go(i){
 }
 $('#btnPrev').onclick=()=>go(cur-1);
 $('#btnNext').onclick=()=>{ if(cur<ACTS.length-1) go(cur+1); };
+
+/* ============ texture vẽ bằng canvas (dùng chung cho các cảnh 3D) ============ */
+const mkC=(w,h)=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; return c; };
+const rnd=(a,b)=>a+Math.random()*(b-a);
+function fbm(ctx,w,h,octs){   // nhiễu nhiều tầng, phủ kiểu overlay lên màu nền
+  octs.forEach(([cells,alpha])=>{
+    const cw=cells, ch=Math.max(2,Math.round(cells*h/w)), s=mkC(cw,ch), sx=s.getContext('2d'), id=sx.createImageData(cw,ch);
+    for(let i=0;i<id.data.length;i+=4){ const v=Math.random()*255; id.data[i]=id.data[i+1]=id.data[i+2]=v; id.data[i+3]=255; }
+    sx.putImageData(id,0,0);
+    ctx.save(); ctx.globalAlpha=alpha; ctx.globalCompositeOperation='overlay'; ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high'; ctx.drawImage(s,0,0,w,h); ctx.restore();
+  });
+}
+function dots(ctx,w,h,n,cols,r0,r1,a0=.5,a1=1){
+  for(let i=0;i<n;i++){ ctx.globalAlpha=rnd(a0,a1); ctx.fillStyle=cols[(Math.random()*cols.length)|0]; ctx.beginPath(); ctx.ellipse(rnd(0,w),rnd(0,h),rnd(r0,r1),rnd(r0,r1),rnd(0,3.14),0,Math.PI*2); ctx.fill(); }
+  ctx.globalAlpha=1;
+}
+function toTex(c,rx=1,ry=1){ const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rx,ry); t.anisotropy=8; return t; }
+
+/* bộ texture dùng chung, tạo một lần khi cần */
+let _TEXS=null;
+function getTextures(){
+  if(_TEXS) return _TEXS;
+  // mặt bàn thí nghiệm: nhựa epoxy xanh nhạt, lấm tấm hạt
+  const TEX_BENCH=(()=>{ const w=1024,h=512,c=mkC(w,h),x=c.getContext('2d');
+    x.fillStyle='#cfe5ea'; x.fillRect(0,0,w,h); fbm(x,w,h,[[6,.35],[24,.25],[96,.15],[384,.12]]);
+    dots(x,w,h,5000,['#9db6bc','#e9f6f8','#b5ccd1','#7f989e'],.5,1.5,.25,.6);
+    return toTex(c); })();
+  // nhựa khay: trắng mờ, vân rất nhẹ
+  const TEX_PLASTIC=(()=>{ const w=256,h=256,c=mkC(w,h),x=c.getContext('2d');
+    x.fillStyle='#f0f0ee'; x.fillRect(0,0,w,h); fbm(x,w,h,[[8,.18],[32,.12],[128,.1]]); return toTex(c,2,2); })();
+  // đất nung: loang màu, vòng xoay bàn xoay gốm, lỗ li ti, vết muối trắng gần miệng chậu
+  const TEX_TERRA=(()=>{ const w=512,h=256,c=mkC(w,h),x=c.getContext('2d');
+    x.fillStyle='#b8673d'; x.fillRect(0,0,w,h); fbm(x,w,h,[[6,.45],[24,.35],[96,.25],[384,.2]]);
+    for(let y=0;y<h;y+=rnd(3,7)){ x.globalAlpha=rnd(.04,.12); x.fillStyle=Math.random()<.5?'#6e3517':'#e09a6e'; x.fillRect(0,y,w,rnd(1,2.5)); }
+    x.globalAlpha=1; dots(x,w,h,900,['#5e2c12','#7a3d1d','#d58c5f'],.4,1.3,.25,.6);
+    const g=x.createLinearGradient(0,0,0,h*.35); g.addColorStop(0,'rgba(238,226,205,.35)'); g.addColorStop(1,'rgba(238,226,205,0)'); x.fillStyle=g; x.fillRect(0,0,w,h*.35);
+    return toTex(c); })();
+  // đất trồng: hạt đất nhiều màu, vài hạt perlite trắng
+  const TEX_SOIL=(()=>{ const w=256,h=256,c=mkC(w,h),x=c.getContext('2d');
+    x.fillStyle='#3a2616'; x.fillRect(0,0,w,h); fbm(x,w,h,[[8,.4],[32,.3]]);
+    dots(x,w,h,3200,['#5a3d26','#24160b','#6b4a2e','#7d6a55','#150d06','#4a3220'],.6,2.2,.6,1);
+    dots(x,w,h,45,['#f2efe6','#dcd8cc'],1.2,2.4,.85,1);
+    return toTex(c); })();
+  // lá lúa: gốc nhạt, giữa xanh đậm, chóp hơi vàng; gân song song và gân giữa sáng
+  const TEX_LEAF=(()=>{ const w=64,h=512,c=mkC(w,h),x=c.getContext('2d');
+    const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,'#9cba52'); g.addColorStop(.12,'#62a845'); g.addColorStop(.55,'#4b973a'); g.addColorStop(.9,'#6db552'); g.addColorStop(1,'#a9cf86');
+    x.fillStyle=g; x.fillRect(0,0,w,h);
+    const e=x.createLinearGradient(0,0,w,0); e.addColorStop(0,'rgba(20,60,15,.35)'); e.addColorStop(.18,'rgba(20,60,15,0)'); e.addColorStop(.82,'rgba(20,60,15,0)'); e.addColorStop(1,'rgba(20,60,15,.35)');
+    x.fillStyle=e; x.fillRect(0,0,w,h);
+    for(let u=5;u<w-3;u+=4.5){ x.fillStyle=`rgba(25,70,18,${rnd(.12,.24)})`; x.fillRect(u,0,1,h); x.fillStyle='rgba(210,240,170,.08)'; x.fillRect(u+1.5,0,1,h); }
+    const m=x.createLinearGradient(0,0,0,h); m.addColorStop(0,'rgba(225,245,195,0)'); m.addColorStop(.3,'rgba(225,245,195,.35)'); m.addColorStop(1,'rgba(225,245,195,.7)');
+    x.fillStyle=m; x.fillRect(w/2-1.5,0,3,h);
+    fbm(x,w,h,[[4,.12],[16,.1]]);
+    return toTex(c); })();
+  // vết bệnh đạo ôn: hình thoi, tâm xám trắng, viền nâu, quầng vàng
+  const TEX_BLAST=(()=>{ const w=64,h=160,c=mkC(w,h),x=c.getContext('2d');
+    const dia=(rx,ry,col)=>{ x.fillStyle=col; x.beginPath(); x.moveTo(0,-ry); x.quadraticCurveTo(rx*2,0,0,ry); x.quadraticCurveTo(-rx*2,0,0,-ry); x.fill(); };
+    x.translate(w/2,h/2);
+    x.filter='blur(3px)'; dia(27,76,'rgba(205,185,60,.6)');
+    x.filter='blur(1px)'; dia(17,60,'#6a3a17'); dia(10,44,'#a2865f');
+    x.filter='none'; dia(6,30,'#dfd9c9');
+    return new THREE.CanvasTexture(c); })();
+
+  return _TEXS={bench:TEX_BENCH,plastic:TEX_PLASTIC,terra:TEX_TERRA,soil:TEX_SOIL,leaf:TEX_LEAF,blast:TEX_BLAST};
+}
+function leafGeo(len,w,bend){
+  const g=new THREE.PlaneGeometry(w,len,1,12), p=g.attributes.position;
+  for(let i=0;i<p.count;i++){ const y=p.getY(i), t=(y+len/2)/len; p.setX(i,p.getX(i)*(1-t*.93)); p.setY(i,t*len); p.setZ(i,bend*t*t); }
+  g.computeVertexNormals(); return g;
+}
+function chromRodGeo(len,r,cen){   // NST dạng que bo tròn, thắt ở tâm động
+  const pts=[], N=90, h=len/2;
+  for(let i=0;i<=N;i++){
+    const y=-h+len*i/N; let rad=r; const d=Math.abs(y)-(h-r);
+    if(d>0) rad=r*Math.sqrt(Math.max(0,1-(d/r)**2));
+    rad*=1-.42*Math.exp(-(((y-cen)/(r*.9))**2));
+    pts.push(new THREE.Vector2(Math.max(rad,1e-4),y));
+  }
+  return new THREE.LatheGeometry(pts,44);
+}
 
 /* ============ 2a – Ý nghĩa: NST 3D + bản đồ gene ============ */
 function act2a(P, V){
@@ -683,6 +755,12 @@ function act2a(P, V){
     vertexShader:'varying vec3 vN;varying vec3 vV;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}',
     fragmentShader:'uniform vec3 uCol;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.-abs(dot(vN,vV)),2.4);gl_FragColor=vec4(uCol,(.04+.6*f));}'}));
   root.add(shell);
+  // hạt lơ lửng trong dịch nhân
+  { const N=420, pos=new Float32Array(N*3); let k=0;
+    while(k<N){ const v3=new THREE.Vector3(rnd(-1,1),rnd(-1,1),rnd(-1,1)); if(v3.length()>1) continue; v3.multiplyScalar(3.7); if(Math.hypot(v3.x,v3.z)<.7 && Math.abs(v3.y)<3.1) continue; pos.set([v3.x,v3.y,v3.z],k*3); k++; }
+    const pg=new THREE.BufferGeometry(); pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    const sc=mkC(32,32), sx=sc.getContext('2d'), rg=sx.createRadialGradient(16,16,0,16,16,16); rg.addColorStop(0,'rgba(255,255,255,1)'); rg.addColorStop(.4,'rgba(220,250,255,.55)'); rg.addColorStop(1,'rgba(220,250,255,0)'); sx.fillStyle=rg; sx.fillRect(0,0,32,32);
+    root.add(new THREE.Points(pg,new THREE.PointsMaterial({size:.09,map:new THREE.CanvasTexture(sc),transparent:true,opacity:.55,depthWrite:false,color:0xd8fbff}))); }
   GENES.forEach(g=>{
     const r=R0*1.17;
     g.mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,.3,44),mat(g.c,{transparent:true,shininess:90}));
@@ -787,11 +865,6 @@ function plantSVG(){
   </svg>`;
 }
 function act2b(P, V){
-  V.innerHTML = `<div class="vcard"><h4>Ruộng thử nghiệm</h4><div class="plantbox" id="b-box">${plantSVG()}</div>
-      <p class="count" id="b-cap" style="margin:4px 0 0;text-align:center">Chọn đủ 3 gene tốt rồi bấm “Trồng thử”.</p>
-      <div class="badges" id="b-badges"></div></div>
-    <div class="vcard hide" id="b-ex"><h4>Ví dụ trong thực tế</h4>
-      <p style="margin:0;font-size:14px;line-height:1.6">Trong chọn giống, người ta chuyển gene để tạo thành <b>nhóm gene liên kết</b> quy định cây trồng có sức đề kháng với <b>thuốc diệt cỏ</b>, <b>thuốc diệt côn trùng</b>, <b>tăng sản lượng</b> hoặc <b>nâng cao giá trị dinh dưỡng</b>.</p></div>`;
   P.innerHTML = `
   <h2>Trò chơi: Em là nhà chọn giống</h2>
   <div class="card" id="b-card">
@@ -804,12 +877,19 @@ function act2b(P, V){
     <div class="chrbar"><div class="slot" data-cell="g1">Ô gene 1</div><div class="slot" data-cell="g2">Ô gene 2</div><div class="cen" aria-hidden="true"></div><div class="slot" data-cell="g3">Ô gene 3</div></div>
     <div class="fb" id="b-fb"></div>
     <div><button class="qbtn hide" id="b-plant">Trồng thử</button><button class="qbtn alt hide" id="b-again">↺ Chơi lại</button></div>
-  </div>`;
+  </div>
+  <div class="card hide" id="b-res"><span class="chip">Kết quả</span>
+    <p style="margin:4px 0 0;font-size:14px">Giống mới mang đủ nhóm tính trạng tốt:</p>
+    <div class="badges" id="b-badges" style="justify-content:flex-start"></div></div>
+  <div class="kcard hide" id="b-ex"><div class="kh"><span class="dot"></span>Ví dụ trong thực tế</div>
+    <p>Trong chọn giống, người ta chuyển gene để tạo thành <b>nhóm gene liên kết</b> quy định cây trồng có sức đề kháng với <b>thuốc diệt cỏ</b>, <b>thuốc diệt côn trùng</b>, <b>tăng sản lượng</b> hoặc <b>nâng cao giá trị dinh dưỡng</b>.</p></div>`;
   say('Hôm nay em là <b>nhà chọn giống</b>! Mục tiêu của em là tạo ra một giống cây trồng vừa kháng sâu, vừa cho năng suất cao, vừa giàu dinh dưỡng. Em hãy chọn các gene tốt và kéo vào <b>cùng một nhiễm sắc thể</b> nhé.');
+  const view = (typeof THREE!=='undefined' && THREE.OrbitControls) ? breedView3D(V) : breedView2D(V);
   const cards=Object.entries(TRAITS).map(([id,t])=>({id,html:`<span class="gdot" style="background:${t.css}"></span>${t.name}`}));
   const fb=$('#b-fb');
   let planted=false;
   const b=board($('#b-card'),cards,{},n=>{
+    view.setGenes(b.placed);
     $('#b-count').textContent=`Đã chọn ${n}/3`;
     $('#b-plant').classList.toggle('hide',n<3);
     $('#b-plant').classList.toggle('nudge',n===3);
@@ -817,27 +897,225 @@ function act2b(P, V){
     else if(n>0) fbShow(fb,'ok','<b>Tốt lắm!</b> Gene này quy định tính trạng tốt. Các gene tốt nằm trên cùng một NST sẽ di truyền cùng nhau.');
   },(id)=>{
     if(planted) return false;
-    if(id==='x'){ fbShow(fb,'no','Gene này làm <b>hạt lép, năng suất kém</b>, không phù hợp với mục tiêu sản xuất. Em để lại nhé.'); return false; }
+    if(id==='x'){ view.reject(); fbShow(fb,'no','Gene này làm <b>hạt lép, năng suất kém</b>, không phù hợp với mục tiêu sản xuất. Em để lại nhé.'); return false; }
     return true;
   });
   $('#b-plant').onclick=()=>{
-    planted=true; b.lock(); $('#b-plant').classList.add('hide'); $('#b-again').classList.remove('hide');
-    const chosen=Object.values(b.placed);
-    const box=$('#b-box'); const svg=$('#plant');
-    $$('.gr',svg).forEach(g=>g.setAttribute('fill', chosen.includes('d')?'#f0a020':'#e2c15a'));
-    svg.classList.add('grow');
-    $('#b-cap').textContent='Cây đang lớn lên…';
-    setTimeout(()=>{
-      $('#b-cap').textContent='Giống mới mang đủ nhóm tính trạng tốt:';
+    planted=true; b.lock(); $('#b-plant').classList.add('hide');
+    const chosen=['g1','g2','g3'].map(c=>b.placed[c]);
+    say('Các gene tốt trên NST được đưa vào giống mới. Em quan sát ruộng thử nghiệm nhé, cây đang lớn lên…');
+    view.plant(chosen,()=>{
+      $('#b-again').classList.remove('hide');
       $('#b-badges').innerHTML=chosen.map((id,i)=>`<span class="badge2" style="animation-delay:${i*.18}s"><span class="gdot" style="background:${TRAITS[id].css}"></span>${TRAITS[id].name}</span>`).join('');
-      $('#b-ex').classList.remove('hide');
+      $('#b-res').classList.remove('hide'); $('#b-ex').classList.remove('hide');
       const names=chosen.map(id=>TRAITS[id].say);
       say(`Cây vừa ${names.slice(0,-1).join(', vừa ')}, vừa ${names[names.length-1]}. Ví dụ trong thực tế: chuyển gene để tạo thành nhóm gene quy định cây trồng có sức đề kháng với thuốc diệt cỏ, thuốc diệt côn trùng, tăng sản lượng hoặc nâng cao giá trị dinh dưỡng.`);
+      setTimeout(()=>$('#b-res').scrollIntoView({behavior:'smooth',block:'nearest'}),200);
       unlock(2);
-    },2600);
-    box.scrollIntoView&&box.scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
   };
   $('#b-again').onclick=()=>go(1);
+  return view.cleanup;
+}
+
+/* ruộng thử nghiệm dạng 2D (dùng khi không tải được Three.js) */
+function breedView2D(V){
+  V.innerHTML = `<div class="vcard"><h4>Ruộng thử nghiệm</h4><div class="plantbox">${plantSVG()}</div>
+      <p class="count" id="b-cap" style="margin:4px 0 0;text-align:center">Chọn đủ 3 gene tốt rồi bấm “Trồng thử”.</p></div>`;
+  return {
+    setGenes(){}, reject(){},
+    plant(chosen,cb){ const svg=$('#plant');
+      $$('.gr',svg).forEach(g=>g.setAttribute('fill', chosen.includes('d')?'#f0a020':'#e2c15a'));
+      svg.classList.add('grow'); $('#b-cap').textContent='Cây đang lớn lên…';
+      setTimeout(()=>{ $('#b-cap').textContent='Giống mới đã trổ bông.'; cb(); },2600); },
+    cleanup:null
+  };
+}
+
+/* ruộng thử nghiệm dạng 3D: ô ruộng có bờ và nước, 9 khóm lúa, NST của giống mới lơ lửng phía trên */
+function breedView3D(V){
+  V.className='v3d'; V.style.cssText='position:absolute;inset:0;z-index:0;overflow:hidden;display:block';
+  V.innerHTML=`<div class="hud">Kéo để xoay · cuộn để phóng to</div>`;
+  const host=V;
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  host.appendChild(renderer.domElement);
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(40,1,.1,100);
+  const controls=new THREE.OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true; controls.enablePan=false; controls.minDistance=3.5; controls.maxDistance=24; controls.maxPolarAngle=1.42;
+  scene.add(new THREE.AmbientLight(0xffffff,.5));
+  scene.add(new THREE.HemisphereLight(0xeafcff,0x3a5a2a,.5));
+  const sun=new THREE.DirectionalLight(0xfff6e6,.9); sun.position.set(4,8,5); sun.castShadow=true;
+  sun.shadow.mapSize.set(2048,2048); Object.assign(sun.shadow.camera,{left:-4,right:4,top:4,bottom:-4,near:1,far:25}); sun.shadow.radius=3;
+  scene.add(sun);
+  const root=new THREE.Group(); scene.add(root);
+  const T=getTextures();
+  const mat=(c,extra={})=>new THREE.MeshPhongMaterial(Object.assign({color:c,shininess:20},extra));
+  const box=(w,h,d,m)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
+
+  // ô ruộng dạng sa bàn: khối đất, bờ ruộng, lớp bùn, mặt nước
+  const PW=4.2, PD=3.2, PH=.8;
+  const soilSide=mat(0x9a8676,{map:T.soil}), soilTop=mat(0x9a7a62,{map:T.soil,bumpMap:T.soil,bumpScale:.03,shininess:40,specular:0x2a2a2a});
+  const block=box(PW,PH,PD,soilSide); block.position.y=-PH/2; block.receiveShadow=true; root.add(block);
+  const under=box(PW+.06,.12,PD+.06,mat(0x6b5444,{map:T.soil})); under.position.y=-PH-.02; root.add(under);
+  const bundM=mat(0x7b8a45,{map:T.soil,bumpMap:T.soil,bumpScale:.03,shininess:4});
+  [[0,PD/2-.09,PW,.18],[0,-PD/2+.09,PW,.18],[PW/2-.09,0,.18,PD],[-PW/2+.09,0,.18,PD]].forEach(([x,z,w,d])=>{ const m=box(w,.16,d,bundM); m.position.set(x,.08,z); m.castShadow=true; m.receiveShadow=true; root.add(m); });
+  const mud=new THREE.Mesh(new THREE.PlaneGeometry(PW-.36,PD-.36),soilTop); mud.rotation.x=-Math.PI/2; mud.position.y=.01; mud.receiveShadow=true; root.add(mud);
+  const water=new THREE.Mesh(new THREE.PlaneGeometry(PW-.36,PD-.36),new THREE.MeshPhongMaterial({color:0x9ad8d2,transparent:true,opacity:.28,shininess:140,specular:0xffffff,depthWrite:false}));
+  water.rotation.x=-Math.PI/2; water.position.y=.07; root.add(water);
+  // cỏ lấm tấm trên bờ
+  const tuftM=mat(0x6aa040,{side:THREE.DoubleSide});
+  for(let i=0;i<70;i++){ const side=i%4, u=rnd(-.48,.48);
+    const x= side<2 ? u*PW : (side===2?1:-1)*(PW/2-.09), z= side<2 ? (side===0?1:-1)*(PD/2-.09) : u*PD;
+    const t=new THREE.Mesh(leafGeo(rnd(.12,.22),.05,.05),tuftM); t.position.set(x+rnd(-.05,.05),.16,z+rnd(-.05,.05)); t.rotation.y=rnd(0,6.28); t.rotation.x=rnd(-.4,.4); root.add(t); }
+
+  // khóm lúa
+  const stemM=mat(0x5f9c40,{shininess:30});
+  const leafM=mat(0xffffff,{map:T.leaf,bumpMap:T.leaf,bumpScale:.004,side:THREE.DoubleSide,shininess:35,specular:0x2a3a1a});
+  const branchM=mat(0xb9a660,{shininess:10});
+  const grainM=mat(0x9ccc65,{shininess:45,specular:0x444422});
+  const grainGeo=new THREE.SphereGeometry(1,10,8);
+  const Y=new THREE.Vector3(0,1,0);
+  const grainData=[];   // từng hạt: khóm, vị trí, hướng, ngưỡng hiện
+  const plants=[];
+  const SPOTS=[]; [-1.25,0,1.25].forEach(x=>[-.85,0,.85].forEach(z=>SPOTS.push([x,z])));
+  SPOTS.forEach(([px,pz],pi)=>{
+    const g=new THREE.Group(); g.position.set(px+rnd(-.08,.08),.02,pz+rnd(-.08,.08)); g.rotation.y=rnd(0,6.28); root.add(g);
+    const pans=new THREE.Group(); pans.visible=false; g.add(pans);
+    const N=4;
+    for(let i=0;i<N;i++){
+      const a=i/N*Math.PI*2+rnd(-.35,.35), lean=rnd(.12,.24), H=rnd(1.5,1.8);
+      const dir=new THREE.Vector3(Math.cos(a),0,Math.sin(a));
+      const p0=dir.clone().multiplyScalar(.04), p1=dir.clone().multiplyScalar(H*lean*.2).setY(H*.55), p2=dir.clone().multiplyScalar(H*lean).setY(H);
+      const stem=new THREE.QuadraticBezierCurve3(p0,p1,p2);
+      const sm=new THREE.Mesh(new THREE.TubeGeometry(stem,8,.022,5,false),stemM); sm.castShadow=true; g.add(sm);
+      [[.1,1.35,.6,-.55],[.3,1.05,.5,.5]].forEach(([t,len,bend,off])=>{
+        const m=new THREE.Mesh(leafGeo(len,.085,bend),leafM); m.position.copy(stem.getPoint(t));
+        m.rotation.order='YXZ'; m.rotation.y=Math.PI/2-a+off; m.rotation.x=rnd(.25,.45); m.castShadow=true; g.add(m); });
+      // bông lúa rủ xuống
+      const c0=p2.clone(), c1=p2.clone().add(dir.clone().multiplyScalar(.2)).add(new THREE.Vector3(0,.16,0)), c2=p2.clone().add(dir.clone().multiplyScalar(.48)).add(new THREE.Vector3(0,-.42,0));
+      const pc=new THREE.QuadraticBezierCurve3(c0,c1,c2);
+      pans.add(new THREE.Mesh(new THREE.TubeGeometry(pc,10,.01,4,false),branchM));
+      const side=new THREE.Vector3().crossVectors(dir,Y).normalize();
+      const NG=12;
+      for(let k=0;k<NG;k++){
+        const t=.1+k*.075, pt=pc.getPoint(t), tan=pc.getTangent(t);
+        const off=side.clone().multiplyScalar((k%2?1:-1)*.03);
+        grainData.push({pi, pos:pt.add(off), q:new THREE.Quaternion().setFromUnitVectors(Y,tan), th:.62+.3*(k/NG)+rnd(0,.04)});
+      }
+    }
+    plants.push({g,pans,delay:pi*.04});
+  });
+  const grains=new THREE.InstancedMesh(grainGeo,grainM,grainData.length); grains.castShadow=true; root.add(grains);
+  const M4=new THREE.Matrix4(), S=new THREE.Vector3(), Pv=new THREE.Vector3(), Qv=new THREE.Quaternion();
+  let growT=0, growing=false, grown=false, growCb=null;
+  const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  const growE=pi=>{ const d=plants[pi].delay; return ease(Math.max(0,Math.min(1,(growT-d)/(1-d*1.5)))); };
+  function updGrains(){
+    grainData.forEach((d,i)=>{
+      const p=plants[d.pi], e=growE(d.pi), sc=p.g.scale.x;
+      const pop=Math.max(0,Math.min(1,(e-d.th)/.08));
+      Pv.copy(d.pos).multiplyScalar(sc).applyQuaternion(p.g.quaternion).add(p.g.position);
+      Qv.copy(p.g.quaternion).multiply(d.q);
+      S.set(.03,.065,.03).multiplyScalar(sc*pop+1e-4);
+      M4.compose(Pv,Qv,S); grains.setMatrixAt(i,M4);
+    });
+    grains.instanceMatrix.needsUpdate=true;
+  }
+  function updPlants(){
+    plants.forEach((p,pi)=>{ const e=growE(pi); p.g.scale.setScalar(.16+.84*e); p.pans.visible=e>.55; });
+    updGrains();
+  }
+  updPlants();
+  let grainFrom=new THREE.Color(0x9ccc65), grainTo=new THREE.Color(0xe2c15a);
+
+  // NST của giống mới (nằm ngang, phía trên ruộng)
+  const chrom=new THREE.Group(); chrom.position.set(0,2.9,-.7); root.add(chrom);
+  const rodM=mat(0xc9483d,{shininess:70,specular:0x2a2a2a,emissive:0x000000});
+  const rod=new THREE.Mesh(chromRodGeo(3.4,.24,-.32),rodM); rod.rotation.z=Math.PI/2; chrom.add(rod);
+  const SLOT_X={g1:-1.2,g2:-.4,g3:.95};
+  const bands={}, labels=[];
+  function addLabel(obj,text,cls){ const el=document.createElement('div'); el.className='lbl '+cls; el.textContent=text; host.appendChild(el); const l={obj,el}; labels.push(l); return l; }
+  function anchor(parent,x,y,z){ const o=new THREE.Object3D(); o.position.set(x,y,z); parent.add(o); return o; }
+  Object.entries(SLOT_X).forEach(([cell,x],i)=>{
+    const r=.24*1.2;
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,.3,40),new THREE.MeshPhongMaterial({color:0xe9efed,transparent:true,opacity:.55,shininess:90}));
+    m.rotation.z=Math.PI/2; m.position.x=x; chrom.add(m);
+    bands[cell]={m,pop:0,lbl:addLabel(anchor(chrom,x,i===1?-.85:-.52,0),'Ô gene '+(i+1),'seedtag'),i};
+  });
+  addLabel(anchor(chrom,0,.6,0),'NST của giống mới','traytag');
+  addLabel(anchor(root,0,-.25,PD/2+.3),'Ruộng thử nghiệm','traytag');
+  let shake=0, pulse=0;
+
+  // hạt sáng: gene từ NST "rơi" xuống ruộng
+  const sparks=[];
+  function launchSparks(chosen){
+    const geo=new THREE.SphereGeometry(.07,12,10);
+    chosen.forEach((id,ci)=>{
+      const from=new THREE.Vector3(); bands['g'+(ci+1)].m.getWorldPosition(from);
+      for(let k=0;k<3;k++){
+        const pl=plants[ci*3+k];
+        const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:new THREE.Color(TRAITS[id].css),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
+        root.add(m); sparks.push({m,from:from.clone(),to:pl.g.position.clone().setY(.35),t:-k*.12-ci*.1});
+      }
+    });
+  }
+
+  // camera vừa khung, tránh bảng Bài học
+  const NARROW=innerWidth<=900;
+  const DIR=new THREE.Vector3(0,.46,.89).normalize(), TGT=new THREE.Vector3(0,NARROW?1.6:1.3,0);
+  function applyOffset(){ const w=host.clientWidth,h=host.clientHeight; if(!w||!h) return; const wide=innerWidth>900; const shift = wide ? Math.min(540,w*.46)+72 : 0; const vs = wide ? 0 : (h*.5+16)/2; camera.setViewOffset(w,h,shift/2,vs,w,h); }
+  function homePos(){ const w=host.clientWidth||800,h=host.clientHeight||600; const wide=innerWidth>900; const shift=wide?Math.min(540,w*.46)+72:0; const lw=Math.max(220,w-shift-30); const lh=wide?h-60:h*.5-40; const t=Math.tan(20*Math.PI/180);
+    const d=Math.max(3.0/(t*lw/h), (NARROW?3.05:2.75)/(t*lh/h)); return DIR.clone().multiplyScalar(d).add(TGT); }
+  let tween=null;
+  const flyHome=()=>{ tween={t:0,from:camera.position.clone(),to:homePos(),tf:controls.target.clone()}; };
+  const tools=$('#tools');
+  const hb=document.createElement('button'); hb.className='ghost xt'; hb.textContent='⤢ Toàn cảnh'; hb.onclick=flyHome; tools.appendChild(hb);
+  function resize(){ const w=host.clientWidth,h=host.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  const ro=new ResizeObserver(()=>{ resize(); applyOffset(); if(!tween) camera.position.copy(homePos()); }); ro.observe(host);
+  controls.target.copy(TGT); resize(); applyOffset(); camera.position.copy(homePos());
+
+  const v=new THREE.Vector3(); let raf,last=performance.now();
+  function frame(now){
+    raf=requestAnimationFrame(frame); const dt=Math.min((now-last)/1000,.05); last=now;
+    if(tween){ tween.t=Math.min(1,tween.t+dt/1.1); const k=ease(tween.t); camera.position.lerpVectors(tween.from,tween.to,k); controls.target.lerpVectors(tween.tf,TGT,k); if(tween.t>=1) tween=null; }
+    chrom.position.y=2.9+Math.sin(now/900)*.05;
+    if(shake>0){ shake=Math.max(0,shake-dt); chrom.position.x=Math.sin(now/22)*.09*(shake/.5); rodM.emissive.setRGB(.45*shake/.5,0,0); } else chrom.position.x=0;
+    if(pulse>0){ pulse=Math.max(0,pulse-dt); const s=.5+.5*Math.sin(now/90); Object.values(bands).forEach(b=>b.m.material.emissive&&b.m.material.emissive.setRGB(.25*s*pulse,.25*s*pulse,.1*s*pulse)); }
+    Object.values(bands).forEach(b=>{ if(b.pop>0){ b.pop=Math.max(0,b.pop-dt*2.5); const s=1+.35*Math.sin(b.pop*Math.PI); b.m.scale.set(s,1+.2*Math.sin(b.pop*Math.PI),s); } });
+    // hạt sáng bay xuống
+    for(let i=sparks.length-1;i>=0;i--){ const s=sparks[i]; s.t+=dt/1.1; const k=Math.max(0,Math.min(1,s.t));
+      s.m.position.lerpVectors(s.from,s.to,ease(k)); s.m.position.y+=Math.sin(Math.PI*k)*.6; s.m.material.opacity=s.t<0?0:1-Math.max(0,(k-.85)/.15);
+      if(s.t>=1){ root.remove(s.m); s.m.material.dispose(); sparks.splice(i,1); } }
+    if(growing){
+      growT=Math.min(1,growT+dt/3.6); updPlants();
+      const ripe=Math.max(0,Math.min(1,(growT-.72)/.28)); grainM.color.copy(grainFrom).lerp(grainTo,ripe);
+      if(growT>=1){ growing=false; grown=true; const cb=growCb; growCb=null; cb&&cb(); }
+    }
+    controls.update(); renderer.render(scene,camera);
+    const w=host.clientWidth,h=host.clientHeight;
+    labels.forEach(l=>{ l.obj.getWorldPosition(v); v.project(camera); l.el.style.left=((v.x*.5+.5)*w)+'px'; l.el.style.top=((-v.y*.5+.5)*h)+'px'; });
+  }
+  raf=requestAnimationFrame(frame);
+  return {
+    setGenes(placed){
+      Object.entries(bands).forEach(([cell,b])=>{
+        const id=placed[cell], m=b.m.material;
+        if(id){ if(b.id!==id){ b.pop=1; } m.color.set(TRAITS[id].css); m.opacity=1; m.transparent=false; m.needsUpdate=true; b.lbl.el.textContent=TRAITS[id].name; b.lbl.el.className='lbl seedtag lit'; }
+        else { m.color.setHex(0xe9efed); m.opacity=.55; m.transparent=true; m.needsUpdate=true; b.lbl.el.textContent='Ô gene '+(b.i+1); b.lbl.el.className='lbl seedtag'; }
+        b.id=id;
+      });
+    },
+    reject(){ shake=.5; },
+    plant(chosen,cb){
+      grainTo=new THREE.Color(chosen.includes('d')?0xf0a020:0xe2c15a);
+      pulse=1.2; launchSparks(chosen); flyHome();
+      setTimeout(()=>{ growCb=cb; growing=true; },1400);
+    },
+    cleanup(){ cancelAnimationFrame(raf); ro.disconnect(); renderer.dispose(); controls.dispose(); V.style.cssText=''; }
+  };
 }
 
 /* ============ 2c – Chỉ thị phân tử ============ */
@@ -860,61 +1138,50 @@ function dnaSVG(){
 function act2c(P, V){
   // chọn ngẫu nhiên 3 cây mang chỉ thị phân tử
   const has=shuffle([0,1,2,3,4,5]).slice(0,3);
-  V.innerHTML = `<div class="vcard"><h4>Khay cây lúa non</h4>
-      <div class="seedgrid" id="c-grid"></div>
-      <div class="legend hide" id="c-leg"><span class="mkdot"></span>Chỉ thị phân tử liên kết với gene kháng bệnh đạo ôn</div></div>
-    <div class="vcard"><h4>Khay giữ lại</h4><div class="keptgrid" id="c-kept"><span class="ph">Chạm vào cây sáng để chuyển sang đây</span></div></div>`;
   P.innerHTML = `
   <h2>Chỉ thị phân tử: nhận biết cây lúa kháng bệnh</h2>
   <div class="kcard" style="margin-top:0"><div class="kh"><span class="dot"></span>Chỉ thị phân tử là gì?</div>
     <p>Là những <b>trình tự nucleotide đặc biệt</b> liên kết với các gene liên quan, giúp nhận biết các đặc tính cần quan tâm.</p></div>
   <div class="card">
     <span class="chip">Nhiệm vụ</span><span class="counter" id="c-count">Đã giữ lại 0/3</span>
-    <p class="muted" style="margin:0;font-size:13.5px">Giúp nhà khoa học chọn những cây lúa non kháng bệnh đạo ôn.</p>
+    <p class="muted" style="margin:0;font-size:13.5px">Giúp nhà khoa học chọn những cây lúa non kháng bệnh đạo ôn: quét chỉ thị phân tử, rồi chạm vào những cây sáng để chuyển sang khay Giữ lại.</p>
     <div><button class="qbtn nudge" id="c-scan">Quét chỉ thị phân tử</button><button class="qbtn alt" id="c-sow" disabled>Gieo thử</button></div>
+    <div class="legend hide" id="c-leg"><span class="mkdot"></span>Chỉ thị phân tử liên kết với gene kháng bệnh đạo ôn</div>
     <div class="fb" id="c-fb"></div>
   </div>
   <div class="card hide" id="c-q"></div>`;
   say('Ngoài việc chọn gene, các nhà khoa học còn có một “dụng cụ” rất đặc biệt, gọi là <b>chỉ thị phân tử</b>. Đó là những trình tự nucleotide đặc biệt liên kết với các gene liên quan, giúp nhận biết các đặc tính cần quan tâm. Em hãy giúp nhà khoa học chọn những cây lúa non kháng bệnh đạo ôn nhé. Em bấm nút <b>“Quét chỉ thị phân tử”</b>.');
-  const grid=$('#c-grid'), keptBox=$('#c-kept'), fb=$('#c-fb');
-  const seeds=[0,1,2,3,4,5].map(i=>{
-    const b=document.createElement('button'); b.type='button'; b.className='seed'+(has.includes(i)?' has':''); b.dataset.i=i;
-    b.innerHTML=`${seedSVG()}${dnaSVG()}<span class="nm">Cây ${i+1}</span>`;
-    b.setAttribute('aria-label','Cây lúa non số '+(i+1));
-    b.onclick=()=>pick(i); return b;
-  });
-  const kept=new Set(); let scanned=false, sown=false;
-  function render(){
-    seeds.forEach((s,i)=>{ if(!kept.has(i)) grid.appendChild(s); });
-    [...kept].sort().forEach(i=>keptBox.appendChild(seeds[i]));
-    $('.ph',keptBox).classList.toggle('hide',kept.size>0);
-    const goodN=[...kept].filter(i=>has.includes(i)).length;
+  const fb=$('#c-fb');
+  const kept=[]; let scanned=false, sown=false;
+  const view = (typeof THREE!=='undefined' && THREE.OrbitControls) ? seedView3D(V,has,pick) : seedView2D(V,has,pick);
+  function status(){
+    const goodN=kept.filter(i=>has.includes(i)).length;
     $('#c-count').textContent=`Đã giữ lại ${goodN}/3`;
-    const allOk = kept.size===3 && goodN===3;
+    const allOk = kept.length===3 && goodN===3;
     $('#c-sow').disabled=!allOk || sown; $('#c-sow').classList.toggle('nudge',allOk&&!sown);
     return allOk;
   }
-  render();
   function pick(i){
     if(sown) return;
     if(!scanned){ fbShow(fb,'info','Em bấm <b>“Quét chỉ thị phân tử”</b> trước để biết cây nào mang gene kháng bệnh nhé.'); return; }
-    if(kept.has(i)){ kept.delete(i); render(); fb.className='fb'; return; }
-    kept.add(i);
-    const ok=render();
-    if(!has.includes(i)) fbShow(fb,'info','Cây này <b>không có chỉ thị phân tử</b> nên không mang gene kháng bệnh. Em chạm vào cây đó trong khay Giữ lại để bỏ ra nhé.');
+    const k=kept.indexOf(i);
+    if(k>=0){ kept.splice(k,1); view.setKept(kept); status(); fb.className='fb'; return; }
+    kept.push(i); view.setKept(kept);
+    const ok=status();
+    if(!has.includes(i)) fbShow(fb,'info',`Cây ${i+1} <b>không có chỉ thị phân tử</b> nên không mang gene kháng bệnh. Em chạm vào cây đó trong khay Giữ lại để bỏ ra nhé.`);
     else if(ok){ fbShow(fb,'ok','<b>Chính xác!</b> Nhờ chỉ thị phân tử, ta nhận biết cây kháng bệnh ngay khi cây còn non, không cần chờ cây lớn.'); say('Chính xác! Bây giờ em bấm <b>“Gieo thử”</b> để xem các cây phát triển ra sao.'); }
     else fb.className='fb';
   }
+  status();
   $('#c-scan').onclick=()=>{
     if(scanned) return;
-    $('#c-scan').disabled=true; $('#c-scan').classList.remove('nudge');
-    const beam=document.createElement('div'); beam.className='scanbeam'; grid.appendChild(beam);
-    setTimeout(()=>{ beam.remove(); scanned=true; V.classList.add('scanned'); $('#c-leg').classList.remove('hide'); $('#c-scan').textContent='Đã quét';
-      say('Những cây có chỉ thị phân tử sẽ <b>sáng lên</b>, đó là những cây mang gene kháng bệnh vì chỉ thị này liên kết với gene kháng bệnh. Em chạm vào các cây sáng để giữ lại.'); },1700);
+    $('#c-scan').disabled=true; $('#c-scan').classList.remove('nudge'); $('#c-scan').textContent='Đang quét…';
+    view.scan(()=>{ scanned=true; $('#c-leg').classList.remove('hide'); $('#c-scan').textContent='Đã quét';
+      say('Những cây có chỉ thị phân tử sẽ <b>sáng lên</b>, đó là những cây mang gene kháng bệnh vì chỉ thị này liên kết với gene kháng bệnh. Em chạm vào các cây sáng để giữ lại.'); });
   };
   $('#c-sow').onclick=()=>{
     sown=true; $('#c-sow').disabled=true; $('#c-sow').classList.remove('nudge');
-    seeds.forEach((s,i)=>{ s.classList.add(kept.has(i)?'healthy':'sick'); s.disabled=true; $('.nm',s).textContent= kept.has(i)?'Khoẻ mạnh':'Bị bệnh đạo ôn'; });
+    view.sow(kept);
     fbShow(fb,'ok','Các cây được giữ lại <b>khoẻ mạnh</b>; các cây không mang gene kháng bệnh xuất hiện <b>đốm bệnh đạo ôn</b> trên lá.');
     say('Các cây giữ lại khoẻ mạnh, còn các cây không mang gene kháng bệnh bị đốm bệnh đạo ôn. Em trả lời câu hỏi bên dưới nhé: vì sao có thể nhận biết cây kháng bệnh ngay từ khi còn non?');
     const q=$('#c-q'); q.classList.remove('hide');
@@ -926,183 +1193,190 @@ function act2c(P, V){
       onDone:()=>unlock(3)});
     setTimeout(()=>q.scrollIntoView({behavior:'smooth',block:'nearest'}),300);
   };
+  return view.cleanup;
 }
 
-/* ============ 2d – Ghi nhớ ============ */
-const ICONS={
-  nst:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 3c2 4 6 14 8 18M16 3c-2 4-6 14-8 18"/></svg>',
-  grp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="8.5" width="19" height="7" rx="3.5"/><path d="M9 8.5v7M12 8.5v7M15 8.5v7"/></svg>',
-  cmp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M4 7h5M4 12h5M15 6h5M15 10h5M15 14h5M15 18h5"/></svg>',
-};
-function illus(k){
-  if(k==='nst') return `<div class="vcard"><h4>Các gene trên cùng một NST di truyền cùng nhau</h4>
-    <svg viewBox="0 0 420 220" style="width:100%;max-height:300px" role="img" aria-label="Cặp NST mang B, V và b, v phân li cùng nhau khi giảm phân">
-      ${chrom(70,20,150,'#d7392f',[{dy:45,color:'#f0a020',label:'B',side:-1},{dy:105,color:'#7b3fb5',label:'V',side:-1}])}
-      ${chrom(120,20,150,'#2f6fdc',[{dy:45,color:'#f8dc9a',label:'b',side:1},{dy:105,color:'#cdb0ea',label:'v',side:1}])}
-      <text x="95" y="200" text-anchor="middle" font-size="12" fill="#5f8b89">Cặp NST tương đồng</text>
-      <path d="M170 95h60" stroke="#5f8b89" stroke-width="2.5" marker-end="url(#arI)"/>
-      <defs><marker id="arI" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="#5f8b89"/></marker></defs>
-      <text x="200" y="83" text-anchor="middle" font-size="11" fill="#5f8b89">giảm phân</text>
-      ${chrom(280,20,100,'#d7392f',[{dy:30,color:'#f0a020',label:'B',side:-1},{dy:70,color:'#7b3fb5',label:'V',side:-1}])}
-      ${chrom(360,20,100,'#2f6fdc',[{dy:30,color:'#f8dc9a',label:'b',side:1},{dy:70,color:'#cdb0ea',label:'v',side:1}])}
-      <text x="280" y="147" text-anchor="middle" font-size="13" font-weight="700" fill="#10302d">Giao tử BV</text>
-      <text x="360" y="147" text-anchor="middle" font-size="13" font-weight="700" fill="#10302d">Giao tử bv</text>
-    </svg></div>`;
-  if(k==='grp') return `<div class="vcard"><h4>Nhóm tính trạng tốt di truyền cùng nhau</h4>
-    <svg viewBox="0 0 420 200" style="width:100%;max-height:280px" role="img" aria-label="Ba gene tốt nằm cạnh nhau trên một NST">
-      <path d="M118 48v-10h138v10" stroke="#3f6b32" stroke-width="2" fill="none"/>
-      <text x="187" y="28" text-anchor="middle" font-size="13" font-weight="700" fill="#3f6b32">Nhóm gene tốt</text>
-      <rect x="20" y="58" width="380" height="34" rx="17" fill="#d7392f"/>
-      <rect x="290" y="58" width="12" height="34" fill="#a3302a"/>
-      <rect x="52" y="56" width="16" height="38" rx="2" fill="#9fb1ad"/><rect x="345" y="56" width="16" height="38" rx="2" fill="#9fb1ad"/>
-      <rect x="125" y="56" width="18" height="38" rx="2" fill="#3fbf7f"/><rect x="178" y="56" width="18" height="38" rx="2" fill="#ffc93c"/><rect x="231" y="56" width="18" height="38" rx="2" fill="#f3f3f3"/>
-      <text x="134" y="114" text-anchor="middle" font-size="11.5" font-weight="600" fill="#10302d">Kháng sâu</text>
-      <text x="187" y="130" text-anchor="middle" font-size="11.5" font-weight="600" fill="#10302d">Năng suất cao</text>
-      <text x="240" y="114" text-anchor="middle" font-size="11.5" font-weight="600" fill="#10302d">Chất lượng tốt</text>
-      <path d="M187 142v24" stroke="#5f8b89" stroke-width="2.5" marker-end="url(#arJ)"/>
-      <defs><marker id="arJ" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="#5f8b89"/></marker></defs>
-      <text x="187" y="190" text-anchor="middle" font-size="12.5" fill="#10302d">Di truyền cùng nhau qua các thế hệ → chọn giống</text>
-    </svg></div>`;
-  return `<div class="vrow">
-    <div class="vcard"><h4 style="color:var(--blue)">Liên kết gene</h4>
-      <svg viewBox="0 0 170 180" style="width:100%;max-height:210px" role="img" aria-label="Hai cặp gene trên cùng một cặp NST">
-        ${chrom(55,10,140,'#d7392f',[{dy:40,color:'#f0a020',label:'B',side:-1},{dy:100,color:'#7b3fb5',label:'V',side:-1}])}
-        ${chrom(105,10,140,'#2f6fdc',[{dy:40,color:'#f8dc9a',label:'b',side:1},{dy:100,color:'#cdb0ea',label:'v',side:1}])}</svg>
-      <div class="count">Hạn chế biến dị tổ hợp, đảm bảo sự di truyền bền vững của nhóm tính trạng</div></div>
-    <div class="vcard"><h4 style="color:var(--orange)">Phân li độc lập</h4>
-      <svg viewBox="0 0 170 180" style="width:100%;max-height:210px" role="img" aria-label="Hai cặp gene trên hai cặp NST khác nhau">
-        ${chrom(40,10,70,'#d7392f',[{dy:35,color:'#f0a020',label:'B',side:-1}])}
-        ${chrom(75,10,70,'#2f6fdc',[{dy:35,color:'#f8dc9a',label:'b',side:1}])}
-        ${chrom(40,100,70,'#d7392f',[{dy:35,color:'#7b3fb5',label:'V',side:-1}])}
-        ${chrom(75,100,70,'#2f6fdc',[{dy:35,color:'#cdb0ea',label:'v',side:1}])}</svg>
-      <div class="count">Làm xuất hiện biến dị tổ hợp, tạo ra sự đa dạng cho sinh giới</div></div></div>`;
-}
-function act2d(P, V){
-  const ITEMS=[
-    {k:'nst', t:'Di truyền liên kết là hiện tượng các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau trong quá trình giảm phân.'},
-    {k:'grp', t:'Các tính trạng do các gene trên một NST quy định luôn di truyền cùng nhau, tạo thành <b>nhóm tính trạng di truyền liên kết</b>. Trong chọn giống, có thể ứng dụng để chọn được những nhóm tính trạng tốt luôn di truyền cùng nhau, phù hợp mục tiêu sản xuất của con người.'},
-    {k:'cmp', t:'Di truyền phân li độc lập làm xuất hiện biến dị tổ hợp, tạo ra sự đa dạng cho sinh giới; còn di truyền liên kết <b>hạn chế biến dị tổ hợp</b>, đảm bảo sự di truyền bền vững của nhóm tính trạng.'},
-  ];
-  P.innerHTML = `
-  <h2>Ghi nhớ</h2>
-  <div class="kcard"><div class="kh"><span class="dot"></span>Em đã học</div>
-    <p class="muted" style="font-size:13px;margin-bottom:4px">Chạm biểu tượng để xem lại hình minh hoạ.</p>
-    ${ITEMS.map((it,i)=>`<div class="learn"><button class="ico" type="button" data-k="${it.k}" aria-label="Xem hình minh hoạ ý ${i+1}">${ICONS[it.k]}</button><p>${it.t}</p></div>`).join('')}</div>
-  <div class="kcard cap"><div class="kh"><span class="dot"></span>Em có thể</div>
-    <ul><li>Nhận biết được các tính trạng di truyền liên kết với nhau ở sinh vật.</li><li>Giải thích được cơ sở ứng dụng di truyền liên kết trong chọn giống.</li></ul></div>
-  <div><button class="qbtn" id="d-map">Lập sơ đồ tổng kết →</button></div>`;
-  say('CHỐT: di truyền liên kết là hiện tượng các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau trong quá trình giảm phân. Trong chọn giống, có thể ứng dụng để chọn được những <b>nhóm tính trạng tốt</b> luôn di truyền cùng nhau. Di truyền liên kết <b>hạn chế biến dị tổ hợp</b>, đảm bảo sự di truyền bền vững của nhóm tính trạng.');
-  function show(k){ V.innerHTML=illus(k); $$('.ico',P).forEach(b=>b.classList.toggle('on',b.dataset.k===k)); }
-  $$('.ico',P).forEach(b=>b.onclick=()=>show(b.dataset.k));
-  show('nst');
-  $('#d-map').onclick=()=>go(4);
-  unlock(4);
-}
-
-/* ============ 2e – Sơ đồ tư duy ============ */
-const MM={
-  b1:{title:'Thí nghiệm của Morgan', color:'#2a5b92', items:['Ruồi giấm','Lai phân tích','Fa tỉ lệ 1 : 1'],
-      hint:'thẻ này nói về cách Morgan làm thí nghiệm và kết quả thu được.',
-      done:'Nhánh <b>Thí nghiệm của Morgan</b>: ruồi giấm, lai phân tích, Fa tỉ lệ 1 : 1.'},
-  b2:{title:'Khái niệm và so sánh', color:'#c7701a', items:['Gene cùng nằm trên một NST','Di truyền cùng nhau','Hạn chế biến dị tổ hợp','Khác với phân li độc lập'],
-      hint:'thẻ này nói về bản chất của di truyền liên kết, hoặc so sánh với phân li độc lập.',
-      done:'Nhánh <b>Khái niệm và so sánh</b>: gene cùng nằm trên một NST, di truyền cùng nhau, hạn chế biến dị tổ hợp; khác với phân li độc lập.'},
-  b3:{title:'Ứng dụng', color:'#3f8f4a', items:['Chọn nhóm tính trạng tốt','Bản đồ gene','Chỉ thị phân tử'],
-      hint:'thẻ này nói về cách con người sử dụng di truyền liên kết.',
-      done:'Nhánh <b>Ứng dụng</b>: chọn nhóm tính trạng tốt, bản đồ gene, chỉ thị phân tử.'},
-};
-const MM_X=[{id:'x1',text:'Đột biến gene',why:'Đột biến gene không thuộc nội dung di truyền liên kết.'},
-            {id:'x2',text:'Hoán vị gene ở mọi loài',why:'Hoán vị gene chỉ xảy ra ở nhiều trường hợp, không phải ở mọi loài, và không thuộc các nhánh này.'}];
-const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-function mmSVG(placed){
-  // placed: {b1:[text|null...], ...}
-  const F='font-family="Roboto, Arial, sans-serif"';
-  let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" ${F} role="img" aria-label="Sơ đồ tư duy Di truyền liên kết">
-   <rect width="900" height="520" rx="18" fill="#ffffff"/>`;
-  const leaf=(x,y,w,txt,col)=>{
-    const filled=!!txt;
-    return `<rect x="${x}" y="${y}" width="${w}" height="38" rx="12" fill="${filled?'#fff':'#f6faf9'}" stroke="${filled?col:'#c8d6d3'}" stroke-width="${filled?2:1.5}" ${filled?'':'stroke-dasharray="5 4"'}/>
-      <text x="${x+w/2}" y="${y+24}" text-anchor="middle" font-size="14.5" font-weight="${filled?600:400}" fill="${filled?'#10302d':'#9bb0ac'}">${filled?esc(txt):'…'}</text>`;
-  };
-  const title=(cx,cy,w,txt,col)=>`<rect x="${cx-w/2}" y="${cy-19}" width="${w}" height="38" rx="19" fill="${col}"/><text x="${cx}" y="${cy+5}" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">${esc(txt)}</text>`;
-  // nhánh 1 (trái)
-  const B1=MM.b1, B2=MM.b2, B3=MM.b3;
-  s+=`<path d="M335 205 C290 190 280 90 260 82" stroke="${B1.color}" stroke-width="4" fill="none"/>`;
-  s+=`<path d="M565 205 C610 190 620 90 640 82" stroke="${B2.color}" stroke-width="4" fill="none"/>`;
-  s+=`<path d="M450 268 C450 310 450 330 450 352" stroke="${B3.color}" stroke-width="4" fill="none"/>`;
-  // nhánh 1 lá
-  s+=`<path d="M46 98 V${150+2*55+19}" stroke="${B1.color}" stroke-width="2.5" fill="none"/>`;
-  placed.b1.forEach((t,i)=>{ const y=150+i*55; s+=`<path d="M46 ${y+19} H62" stroke="${B1.color}" stroke-width="2.5"/>`+leaf(62,y,226,t,B1.color); });
-  s+=title(160,80,232,B1.title,B1.color);
-  // nhánh 2 lá
-  s+=`<path d="M854 98 V${140+3*52+19}" stroke="${B2.color}" stroke-width="2.5" fill="none"/>`;
-  placed.b2.forEach((t,i)=>{ const y=140+i*52; s+=`<path d="M838 ${y+19} H854" stroke="${B2.color}" stroke-width="2.5"/>`+leaf(598,y,240,t,B2.color); });
-  s+=title(740,80,232,B2.title,B2.color);
-  // nhánh 3 lá
-  [220,450,680].forEach((x,i)=>{ s+=`<path d="M450 389 C450 420 ${x} 418 ${x} 446" stroke="${B3.color}" stroke-width="2.5" fill="none"/>`; s+=leaf(x-105,446,210,placed.b3[i],B3.color); });
-  s+=title(450,370,170,B3.title,B3.color);
-  // tâm
-  s+=`<ellipse cx="450" cy="225" rx="130" ry="46" fill="#195856"/>
-    <g transform="translate(345 203)"><rect x="0" y="0" width="12" height="44" rx="6" fill="#e2685d"/><rect x="16" y="0" width="12" height="44" rx="6" fill="#5b8fe0"/><rect x="-2" y="10" width="16" height="6" fill="#ffc93c"/><rect x="14" y="10" width="16" height="6" fill="#f8dc9a"/><rect x="-2" y="27" width="16" height="6" fill="#b48ae6"/><rect x="14" y="27" width="16" height="6" fill="#d8c3f2"/></g>
-    <text x="470" y="232" text-anchor="middle" font-size="20" font-weight="800" fill="#fff">Di truyền liên kết</text>`;
-  return s+'</svg>';
-}
-function act2e(P, V){
-  V.innerHTML=`<div class="vcard mm" id="e-mm"></div>`;
-  const slotsHTML=k=>MM[k].items.map((_,i)=>`<div class="slot" data-cell="${k}-${i}">Thả thẻ</div>`).join('');
-  P.innerHTML = `
-  <h2>Sơ đồ tư duy tổng kết bài học</h2>
-  <div class="card" id="e-card">
-    <span class="chip">Ghép thẻ</span><span class="counter" id="e-count">Đã ghép 0/10</span>
-    <p class="muted" style="margin:0;font-size:13.5px">Kéo các thẻ từ khoá vào đúng nhánh (hoặc chọn thẻ rồi chạm ô). Trong khay có 2 thẻ không thuộc nhánh nào.</p>
-    ${['b1','b2','b3'].map(k=>`<div class="branch" style="border-color:${MM[k].color}55"><div class="bh" style="color:${MM[k].color}"><i style="background:${MM[k].color}"></i>${MM[k].title}</div><div class="bslots">${slotsHTML(k)}</div></div>`).join('')}
-    <div class="tray"></div>
-    <div class="fb" id="e-fb"></div>
-    <div><button class="qbtn hide" id="e-dl">Tải sơ đồ (PNG)</button><button class="qbtn alt hide" id="e-again">↺ Làm lại</button></div>
-  </div>`;
-  say('Chúng mình cùng nhìn lại cả bài học bằng một <b>sơ đồ tư duy</b> nhé. Ở giữa là “Di truyền liên kết”, xung quanh có 3 nhánh. Em kéo các thẻ từ khoá vào đúng nhánh.');
-  const cards=[], branchOf={}, textOf={};
-  ['b1','b2','b3'].forEach(k=>MM[k].items.forEach((t,i)=>{ const id=k+'_'+i; cards.push({id,html:esc(t)}); branchOf[id]=k; textOf[id]=t; }));
-  MM_X.forEach(x=>{ cards.push({id:x.id,html:esc(x.text)}); textOf[x.id]=x.text; });
-  const fb=$('#e-fb'), doneB=new Set();
-  function draw(placed){
-    const st={b1:[],b2:[],b3:[]};
-    ['b1','b2','b3'].forEach(k=>MM[k].items.forEach((_,i)=>{ const id=placed[k+'-'+i]; st[k].push(id?textOf[id]:null); }));
-    $('#e-mm').innerHTML=mmSVG(st);
-  }
-  const b=board($('#e-card'),cards,{},n=>{
-    $('#e-count').textContent=`Đã ghép ${n}/10`;
-    draw(b.placed);
-    ['b1','b2','b3'].forEach(k=>{
-      const full=MM[k].items.every((_,i)=>b.placed[k+'-'+i]);
-      if(full && !doneB.has(k)){ doneB.add(k); say(MM[k].done); }
-    });
-    if(n===10){
-      b.lock();
-      fbShow(fb,'ok','<b>Giỏi lắm!</b> Sơ đồ tư duy đã hoàn chỉnh. Em có thể bấm “Tải sơ đồ” và làm theo mẫu để vẽ sơ đồ tư duy của riêng mình bằng công cụ số mà giáo viên yêu cầu nhé.');
-      say('Giỏi lắm! Em có thể bấm <b>“Tải sơ đồ”</b> và làm theo mẫu để vẽ sơ đồ tư duy của riêng mình bằng công cụ số mà giáo viên yêu cầu nhé.');
-      $('#e-dl').classList.remove('hide'); $('#e-again').classList.remove('hide');
-      unlock(5);
-      setTimeout(()=>fb.scrollIntoView({behavior:'smooth',block:'nearest'}),200);
-    } else if(n>0) fb.className='fb';
-  },(id,cell)=>{
-    const want=cell.dataset.cell.split('-')[0];
-    if(branchOf[id]===want) return true;
-    const x=MM_X.find(o=>o.id===id);
-    fbShow(fb,'no', x ? `<b>Thẻ “${esc(x.text)}” chưa phù hợp.</b> ${x.why}` : `<b>Thẻ “${esc(textOf[id])}” chưa đúng nhánh.</b> Gợi ý: ${MM[branchOf[id]].hint}`);
-    return false;
+/* khay cây dạng 2D (dùng khi không tải được Three.js) */
+function seedView2D(V,has,onPick){
+  V.innerHTML = `<div class="vcard"><h4>Khay cây lúa non</h4><div class="seedgrid" id="c-grid"></div></div>
+    <div class="vcard"><h4>Khay giữ lại</h4><div class="keptgrid" id="c-kept"><span class="ph">Chạm vào cây sáng để chuyển sang đây</span></div></div>`;
+  const grid=$('#c-grid'), keptBox=$('#c-kept');
+  const seeds=[0,1,2,3,4,5].map(i=>{
+    const b=document.createElement('button'); b.type='button'; b.className='seed'+(has.includes(i)?' has':'');
+    b.innerHTML=`${seedSVG()}${dnaSVG()}<span class="nm">Cây ${i+1}</span>`;
+    b.setAttribute('aria-label','Cây lúa non số '+(i+1));
+    b.onclick=()=>onPick(i); grid.appendChild(b); return b;
   });
-  draw({});
-  $('#e-again').onclick=()=>go(4);
-  $('#e-dl').onclick=()=>{
-    const svg=$('#e-mm svg').outerHTML.replace('<svg ','<svg width="1800" height="1040" ');
-    const img=new Image();
-    img.onload=()=>{
-      const c=document.createElement('canvas'); c.width=1800; c.height=1040;
-      const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(img,0,0,c.width,c.height);
-      c.toBlob(bl=>{ if(!bl) return; const a=document.createElement('a'); a.href=URL.createObjectURL(bl); a.download='so-do-tu-duy-di-truyen-lien-ket.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); },'image/png');
-    };
-    img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  return {
+    setKept(arr){ seeds.forEach((s,i)=>{ if(!arr.includes(i)) grid.appendChild(s); }); arr.forEach(i=>keptBox.appendChild(seeds[i])); $('.ph',keptBox).classList.toggle('hide',arr.length>0); },
+    scan(cb){ const beam=document.createElement('div'); beam.className='scanbeam'; grid.appendChild(beam);
+      setTimeout(()=>{ beam.remove(); V.classList.add('scanned'); cb(); },1700); },
+    sow(arr){ seeds.forEach((s,i)=>{ s.classList.add(arr.includes(i)?'healthy':'sick'); s.disabled=true; $('.nm',s).textContent= arr.includes(i)?'Khoẻ mạnh':'Bị bệnh đạo ôn'; }); },
+    cleanup:null
+  };
+}
+
+/* khay cây dạng 3D: bàn thí nghiệm, 2 khay, 6 chậu lúa non kèm thẻ DNA */
+function seedView3D(V,has,onPick){
+  V.className='v3d'; V.style.cssText='position:absolute;inset:0;z-index:0;overflow:hidden;display:block';
+  V.innerHTML=`<div class="hud">Kéo để xoay · chạm vào cây để chọn</div>`;
+  const host=V;
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  host.appendChild(renderer.domElement);
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(40,1,.1,100);
+  const controls=new THREE.OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true; controls.enablePan=false; controls.minDistance=5; controls.maxDistance=34; controls.maxPolarAngle=1.38;
+  scene.add(new THREE.AmbientLight(0xffffff,.55));
+  scene.add(new THREE.HemisphereLight(0xeafcff,0x2a5a56,.45));
+  const dl=new THREE.DirectionalLight(0xffffff,.85); dl.position.set(4,9,6); dl.castShadow=true;
+  dl.shadow.mapSize.set(2048,2048); Object.assign(dl.shadow.camera,{left:-8,right:8,top:6,bottom:-6,near:1,far:30}); dl.shadow.radius=4;
+  scene.add(dl);
+  const root=new THREE.Group(); scene.add(root);
+  const mat=(c,extra={})=>new THREE.MeshPhongMaterial(Object.assign({color:c,shininess:30},extra));
+  const box=(w,h,d,m)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
+  const {bench:TEX_BENCH,plastic:TEX_PLASTIC,terra:TEX_TERRA,soil:TEX_SOIL,leaf:TEX_LEAF,blast:TEX_BLAST}=getTextures();
+
+  // bàn thí nghiệm
+  const NARROW=innerWidth<=900;   // màn hẹp: mỗi khay 2 cột × 3 hàng
+  const TW=NARROW?3.3:4.7, TD=NARROW?4.9:3.7;
+  const TX=NARROW?[-1.95,1.95]:[-2.8,2.8], COLS=NARROW?[-.78,.78]:[-1.42,0,1.42], ROWS=NARROW?[-1.55,0,1.55]:[-.88,.88];
+  const table=box(NARROW?8.4:11.4,.32,NARROW?6.4:5.4,mat(0xffffff,{map:TEX_BENCH,bumpMap:TEX_BENCH,bumpScale:.012,shininess:70,specular:0x3a4a4c})); table.position.y=-.16; table.receiveShadow=true; root.add(table);
+  const edge=box(NARROW?8.5:11.5,.12,NARROW?6.5:5.5,mat(0xa9c7cd,{map:TEX_BENCH})); edge.position.y=-.36; root.add(edge);
+
+  function tray(x,color,rim){
+    const g=new THREE.Group(); g.position.x=x;
+    const base=box(TW,.12,TD,mat(color,{map:TEX_PLASTIC,bumpMap:TEX_PLASTIC,bumpScale:.006,shininess:45})); base.position.y=.06; base.receiveShadow=true; g.add(base);
+    const rm=mat(rim,{map:TEX_PLASTIC,shininess:55});
+    [[0,TD/2,TW,.08],[0,-TD/2,TW,.08],[TW/2,0,.08,TD+.08],[-TW/2,0,.08,TD+.08]].forEach(([px,pz,w,d])=>{ const r=box(w,.22,d,rm); r.position.set(px,.17,pz); r.castShadow=true; r.receiveShadow=true; g.add(r); });
+    COLS.forEach(cx=>ROWS.forEach(rz=>{ const ring=new THREE.Mesh(new THREE.RingGeometry(.36,.42,32),new THREE.MeshBasicMaterial({color:rim,transparent:true,opacity:.6})); ring.rotation.x=-Math.PI/2; ring.position.set(cx,.125,rz); g.add(ring); }));
+    root.add(g); return g;
+  }
+  tray(TX[0],0xf4f7f6,0xb9cfcb);
+  tray(TX[1],0xfff4d9,0xd8bf86);
+  const NC=COLS.length; const slotPos=(t,k)=>new THREE.Vector3(TX[t]+COLS[k%NC],.12,ROWS[(k/NC)|0]);
+
+  // cây lúa non
+  const BLADES=[{a:0,len:1.35,tilt:.06,bend:.12,c:1},{a:2.1,len:1.02,tilt:.36,bend:.34,c:0},{a:4.2,len:1.08,tilt:.34,bend:.34,c:0},{a:1.05,len:.86,tilt:.5,bend:.28,c:1},{a:3.2,len:.92,tilt:.46,bend:.3,c:1},{a:5.2,len:.8,tilt:.55,bend:.26,c:0}];
+  const DNA_COLS=[0x5aa9e6,0xe0719a,0x3fbf7f,0xf08a3c];
+  const plants=[], pickables=[], labels=[];
+  const spotGeo=new THREE.PlaneGeometry(1,1), spotMat=new THREE.MeshPhongMaterial({map:TEX_BLAST,transparent:true,depthWrite:false,side:THREE.DoubleSide,shininess:5,polygonOffset:true,polygonOffsetFactor:-2});
+  const terraM=mat(0xffffff,{map:TEX_TERRA,bumpMap:TEX_TERRA,bumpScale:.02,shininess:6,specular:0x161616,side:THREE.DoubleSide});
+  const soilM=mat(0xffffff,{map:TEX_SOIL,bumpMap:TEX_SOIL,bumpScale:.04,shininess:2,specular:0x000000});
+  for(let i=0;i<6;i++){
+    const g=new THREE.Group(); g.userData.pi=i;
+    const pot=new THREE.Mesh(new THREE.CylinderGeometry(.34,.25,.44,40,1,true),terraM); pot.position.y=.22; pot.castShadow=true; g.add(pot);
+    const lip=new THREE.Mesh(new THREE.TorusGeometry(.33,.04,10,40),terraM); lip.rotation.x=Math.PI/2; lip.position.y=.44; g.add(lip);
+    const soil=new THREE.Mesh(new THREE.CircleGeometry(.315,40),soilM); soil.rotation.x=-Math.PI/2; soil.position.y=.425; g.add(soil);
+    const leafG=new THREE.Group(); leafG.position.y=.43; g.add(leafG);
+    const leafOpt={map:TEX_LEAF,bumpMap:TEX_LEAF,bumpScale:.004,side:THREE.DoubleSide,shininess:38,specular:0x2a3a1a};
+    const lm=[mat(0xd2dec8,leafOpt),mat(0xffffff,leafOpt)];
+    const spots=[];
+    BLADES.forEach((b,k)=>{
+      const m=new THREE.Mesh(leafGeo(b.len*1.2,.17,b.bend),lm[b.c]); m.rotation.order='YXZ'; m.rotation.y=b.a+i*.7; m.rotation.x=b.tilt; m.castShadow=true; leafG.add(m);
+      if(k<5) [.3,.5,.7].forEach((t,j)=>{ if((k+j)%3===2) return; const L=b.len*1.2, wid=.17*(1-.93*t); const slope=2*b.bend*t/L;
+        [1,-1].forEach(sd=>{ const sp=new THREE.Mesh(spotGeo,spotMat); sp.scale.set(wid*.8,wid*2.6,1); sp.position.set(rnd(-.15,.15)*wid,t*L,b.bend*t*t+sd*.003); sp.rotation.x=Math.atan(slope); sp.visible=false; m.add(sp); spots.push(sp); }); });
+    });
+    // thẻ DNA đặt nghiêng phía trước chậu
+    const card=new THREE.Group(); card.position.set(0,.2,.5); card.rotation.x=-.75; g.add(card);
+    const plate=box(.98,.2,.03,mat(0xffffff)); plate.castShadow=true; card.add(plate);
+    const rod=box(.9,.02,.02,mat(0xb7c7c4)); rod.position.z=.03; card.add(rod);
+    const mkMat=mat(0xc9d6d3,{emissive:0x000000});
+    for(let k=0;k<14;k++){ const mk=k>=6&&k<=8; const c=box(.05,.13,.035,mk?mkMat:mat(DNA_COLS[(k*7)%4])); c.position.set(-.42+k*.0646,0,.035); card.add(c); }
+    // vòng sáng & cột sáng khi quét
+    const glow=new THREE.Mesh(new THREE.TorusGeometry(.5,.045,10,48),new THREE.MeshBasicMaterial({color:0x37e07a,transparent:true,opacity:0,depthWrite:false}));
+    glow.rotation.x=Math.PI/2; glow.position.y=.03; g.add(glow);
+    const beam=new THREE.Mesh(new THREE.CylinderGeometry(.46,.46,2.6,28,1,true),new THREE.MeshBasicMaterial({color:0x37e07a,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
+    beam.position.y=1.3; g.add(beam);
+    const p0=slotPos(0,i); g.position.copy(p0); root.add(g);
+    g.traverse(o=>{ if(o.isMesh){ o.userData.pi=i; if(o!==glow&&o!==beam) pickables.push(o); } });
+    const anc=new THREE.Object3D(); anc.position.set(0,.02,.9); g.add(anc);
+    const el=document.createElement('div'); el.className='lbl seedtag'; el.textContent='Cây '+(i+1); host.appendChild(el);
+    labels.push({obj:anc,el});
+    plants.push({g,leafG,lm,spots,mkMat,glow,beam,has:has.includes(i),lit:false,from:p0.clone(),to:p0.clone(),t:1,grow:1,growTo:1,sick:0,el});
+  }
+  // nhãn khay
+  [[TX[0],'Khay cây lúa non'],[TX[1],'Khay giữ lại']].forEach(([x,t])=>{ const a=new THREE.Object3D(); a.position.set(x,.3,TD/2+.4); root.add(a); const el=document.createElement('div'); el.className='lbl traytag'; el.textContent=t; host.appendChild(el); labels.push({obj:a,el}); });
+
+  // thanh quét laser
+  const gantry=new THREE.Group(); gantry.visible=false; root.add(gantry);
+  const bar=box(.24,.18,TD+.4,mat(0x2c4745,{shininess:80})); bar.position.y=2.45; gantry.add(bar);
+  const head=box(.34,.1,TD+.4,mat(0x37e07a,{emissive:0x1f8f4a})); head.position.y=2.33; gantry.add(head);
+  const sheet=new THREE.Mesh(new THREE.PlaneGeometry(TD+.2,2.3),new THREE.MeshBasicMaterial({color:0x37e07a,transparent:true,opacity:.28,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
+  sheet.rotation.y=Math.PI/2; sheet.position.y=1.15; gantry.add(sheet);
+  let scanT=-1, scanCb=null, sown=false;
+
+  // chọn cây bằng chạm
+  const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+  let down=null, hover=-1;
+  function hit(ev){
+    const r=renderer.domElement.getBoundingClientRect();
+    ndc.set(((ev.clientX-r.left)/r.width)*2-1, -((ev.clientY-r.top)/r.height)*2+1);
+    ray.setFromCamera(ndc,camera); const h=ray.intersectObjects(pickables,false)[0];
+    return h? h.object.userData.pi : -1;
+  }
+  const cvs=renderer.domElement;
+  const onDown=ev=>{ down=[ev.clientX,ev.clientY]; };
+  const onUp=ev=>{ if(!down) return; const d=Math.hypot(ev.clientX-down[0],ev.clientY-down[1]); down=null; if(d>6) return; const i=hit(ev); if(i>=0) onPick(i); };
+  const onMove=ev=>{ if(ev.pointerType==='touch') return; const i=sown?-1:hit(ev); if(i!==hover){ hover=i; cvs.style.cursor=i>=0?'pointer':''; } };
+  cvs.addEventListener('pointerdown',onDown); cvs.addEventListener('pointerup',onUp); cvs.addEventListener('pointermove',onMove);
+
+  // camera vừa khung, tránh bảng Bài học
+  const DIR=new THREE.Vector3(0,.76,.65).normalize();
+  function applyOffset(){ const w=host.clientWidth,h=host.clientHeight; if(!w||!h) return; const wide=innerWidth>900; const shift = wide ? Math.min(540,w*.46)+72 : 0; const vs = wide ? 0 : (h*.5+16)/2; camera.setViewOffset(w,h,shift/2,vs,w,h); }
+  function homePos(){ const w=host.clientWidth||800,h=host.clientHeight||600; const wide=innerWidth>900; const shift=wide?Math.min(540,w*.46)+72:0; const lw=Math.max(220,w-shift-30); const lh=wide?h-40:h*.5-40; const t=Math.tan(20*Math.PI/180);
+    const d=Math.max((NARROW?4.1:6.1)/(t*lw/h), (NARROW?3.7:3.0)/(t*lh/h)); return DIR.clone().multiplyScalar(d); }
+  let tween=null;
+  const flyHome=()=>{ tween={t:0,from:camera.position.clone(),to:homePos(),tf:controls.target.clone()}; };
+  const tools=$('#tools');
+  const hb=document.createElement('button'); hb.className='ghost xt'; hb.textContent='⤢ Toàn cảnh'; hb.onclick=flyHome; tools.appendChild(hb);
+  function resize(){ const w=host.clientWidth,h=host.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  const ro=new ResizeObserver(()=>{ resize(); applyOffset(); if(!tween) camera.position.copy(homePos()); }); ro.observe(host);
+  resize(); applyOffset(); camera.position.copy(homePos()); controls.target.set(0,0,0);
+
+  const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  const v=new THREE.Vector3(), yellow=new THREE.Color(0xffd98a), dark=new THREE.Color(0xd2dec8), light=new THREE.Color(0xffffff);
+  let raf,last=performance.now(),litAt=0;
+  function frame(now){
+    raf=requestAnimationFrame(frame); const dt=Math.min((now-last)/1000,.05); last=now;
+    if(tween){ tween.t=Math.min(1,tween.t+dt/1.1); const k=ease(tween.t); camera.position.lerpVectors(tween.from,tween.to,k); controls.target.lerpVectors(tween.tf,new THREE.Vector3(),k); if(tween.t>=1) tween=null; }
+    // quét
+    if(scanT>=0){
+      scanT=Math.min(1,scanT+dt/2.2); const x=TX[0]-TW/2+TW*ease(scanT); gantry.position.x=x;
+      plants.forEach(p=>{ if(p.has && !p.lit && p.g.position.x<x){ p.lit=true; p.litAt=now; p.mkMat.color.setHex(0x22c55e); p.mkMat.emissive.setHex(0x0f7a36); p.el.classList.add('lit'); } });
+      if(scanT>=1){ scanT=-1; gantry.visible=false; const cb=scanCb; scanCb=null; cb&&cb(); }
+    }
+    plants.forEach((p,i)=>{
+      // di chuyển giữa hai khay theo đường vòng cung
+      if(p.t<1){ p.t=Math.min(1,p.t+dt/.75); const k=ease(p.t); p.g.position.lerpVectors(p.from,p.to,k); p.g.position.y=.12+Math.sin(Math.PI*k)*1.1; }
+      if(p.lit){ const age=(now-p.litAt)/1000; p.glow.material.opacity=.55+.3*Math.sin(now/260+i); p.beam.material.opacity=Math.max(0,.4*(1-age/1.6)); }
+      const hs = (i===hover && !sown) ? 1.08 : 1; p.g.scale.x+= (hs-p.g.scale.x)*.25; p.g.scale.z=p.g.scale.x;
+      if(p.grow!==p.growTo){ p.grow+= (p.growTo-p.grow)*Math.min(1,dt*2.2); if(Math.abs(p.grow-p.growTo)<.002) p.grow=p.growTo; p.leafG.scale.set(1+(p.grow-1)*.6,p.grow,1+(p.grow-1)*.6); }
+      if(p.sick>0 && p.sick<1){ p.sick=Math.min(1,p.sick+dt*.8); p.lm[0].color.copy(dark).lerp(yellow,p.sick); p.lm[1].color.copy(light).lerp(yellow,p.sick*.85); p.lm.forEach(m=>m.emissive.setRGB(.30*p.sick,.19*p.sick,0)); if(p.sick>.35) p.spots.forEach(s=>s.visible=true); }
+    });
+    controls.update(); renderer.render(scene,camera);
+    const w=host.clientWidth,h=host.clientHeight;
+    labels.forEach(l=>{ l.obj.getWorldPosition(v); v.project(camera); l.el.style.left=((v.x*.5+.5)*w)+'px'; l.el.style.top=((-v.y*.5+.5)*h)+'px'; });
+  }
+  raf=requestAnimationFrame(frame);
+  return {
+    setKept(arr){
+      plants.forEach((p,i)=>{
+        const k=arr.indexOf(i); const to = k>=0 ? slotPos(1,k) : slotPos(0,i);
+        if(to.distanceTo(p.to)>.01){ p.from=p.g.position.clone(); p.to=to; p.t=0; }
+      });
+    },
+    scan(cb){ scanCb=cb; scanT=0; gantry.visible=true; gantry.position.x=TX[0]-TW/2; },
+    sow(arr){
+      sown=true; cvs.style.cursor='';
+      plants.forEach((p,i)=>{ const ok=arr.includes(i);
+        if(ok){ p.growTo=1.35; p.el.textContent='Khoẻ mạnh'; p.el.className='lbl seedtag ok'; }
+        else { p.growTo=.92; p.sick=.01; p.el.textContent='Bị bệnh đạo ôn'; p.el.className='lbl seedtag bad'; }
+      });
+    },
+    cleanup(){ cancelAnimationFrame(raf); ro.disconnect(); cvs.removeEventListener('pointerdown',onDown); cvs.removeEventListener('pointerup',onUp); cvs.removeEventListener('pointermove',onMove); renderer.dispose(); controls.dispose(); V.style.cssText=''; }
   };
 }
 
