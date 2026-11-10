@@ -643,6 +643,17 @@ function leafGeo(len,w,bend){
   for(let i=0;i<p.count;i++){ const y=p.getY(i), t=(y+len/2)/len; p.setX(i,p.getX(i)*(1-t*.93)); p.setY(i,t*len); p.setZ(i,bend*t*t); }
   g.computeVertexNormals(); return g;
 }
+function riceLeafGeo(len,w,arc){   // lá lúa: phiến hẹp dài, gần như đều bề ngang, nhọn ở chóp, cong vòng ra ngoài
+  const N=18, rows=[]; let y=0,z=0;
+  for(let j=0;j<=N;j++){ const t=j/N, th=arc*Math.pow(t,1.6); rows.push({y,z,th}); y+=Math.cos(th)*len/N; z+=Math.sin(th)*len/N; }
+  const g=new THREE.PlaneGeometry(w,len,2,N), p=g.attributes.position;
+  for(let i=0;i<p.count;i++){
+    const t=Math.min(1,Math.max(0,(p.getY(i)+len/2)/len)), j=Math.round(t*N), r=rows[j];   // kẹp t: sai số làm tròn cho 1-t < 0 → NaN (chóp lá đen)
+    const f=Math.max(.06,Math.pow(Math.min(1,(1-t)/.28),.75))*(.72+.28*Math.min(1,t/.12)), x=p.getX(i)*f;
+    p.setX(i,x); p.setY(i,r.y-Math.sin(r.th)*Math.abs(x)*.35); p.setZ(i,r.z+Math.cos(r.th)*Math.abs(x)*.35);   // gấp nhẹ theo gân giữa
+  }
+  g.computeVertexNormals(); g.userData.rows=rows; g.userData.len=len; return g;
+}
 function chromRodGeo(len,r,cen){   // NST dạng que bo tròn, thắt ở tâm động
   const pts=[], N=90, h=len/2;
   for(let i=0;i<=N;i++){
@@ -1080,7 +1091,7 @@ function breedView3D(V){
 
   const v=new THREE.Vector3(); let raf,last=performance.now();
   function frame(now){
-    raf=requestAnimationFrame(frame); const dt=Math.min((now-last)/1000,.05); last=now;
+    raf=requestAnimationFrame(frame); const dt=Math.max(0,Math.min((now-last)/1000,.05)); last=now;
     if(tween){ tween.t=Math.min(1,tween.t+dt/1.1); const k=ease(tween.t); camera.position.lerpVectors(tween.from,tween.to,k); controls.target.lerpVectors(tween.tf,TGT,k); if(tween.t>=1) tween=null; }
     chrom.position.y=2.9+Math.sin(now/900)*.05;
     if(shake>0){ shake=Math.max(0,shake-dt); chrom.position.x=Math.sin(now/22)*.09*(shake/.5); rodM.emissive.setRGB(.45*shake/.5,0,0); } else chrom.position.x=0;
@@ -1136,17 +1147,18 @@ function dnaSVG(){
   for(let i=0;i<14;i++){ const mkr=i>=6&&i<=8; s+=`<rect x="${2+i*6}" y="2" width="5" height="10" rx="1.2" ${mkr?'class="mk"':`fill="${cols[(i*7)%4]}"`}/>`; }
   return `<svg class="dna" viewBox="0 0 88 14" aria-hidden="true"><rect x="0" y="6" width="88" height="2" fill="#b7c7c4"/>${s}</svg>`;
 }
+let c2Has=null;   // giữ bộ cây mang chỉ thị khi chơi lại
 function act2c(P, V){
-  // chọn ngẫu nhiên 3 cây mang chỉ thị phân tử
-  const has=shuffle([0,1,2,3,4,5]).slice(0,3);
+  // chọn ngẫu nhiên 3 cây mang chỉ thị phân tử (giữ nguyên khi em bấm "Chọn lại")
+  const has=c2Has||shuffle([0,1,2,3,4,5]).slice(0,3); c2Has=null;
   P.innerHTML = `
   <h2>Chỉ thị phân tử: nhận biết cây lúa kháng bệnh</h2>
   <div class="kcard" style="margin-top:0"><div class="kh"><span class="dot"></span>Chỉ thị phân tử là gì?</div>
     <p>Là những <b>trình tự nucleotide đặc biệt</b> liên kết với các gene liên quan, giúp nhận biết các đặc tính cần quan tâm.</p></div>
   <div class="card">
-    <span class="chip">Nhiệm vụ</span><span class="counter" id="c-count">Đã giữ lại 0/3</span>
-    <p class="muted" style="margin:0;font-size:13.5px">Giúp nhà khoa học chọn những cây lúa non kháng bệnh đạo ôn: quét chỉ thị phân tử, rồi chạm vào những cây sáng để chuyển sang khay Giữ lại.</p>
-    <div><button class="qbtn nudge" id="c-scan">Quét chỉ thị phân tử</button><button class="qbtn alt" id="c-sow" disabled>Gieo thử</button></div>
+    <span class="chip">Nhiệm vụ</span><span class="counter" id="c-count">Đã giữ lại 0 cây</span>
+    <p class="muted" style="margin:0;font-size:13.5px">Giúp nhà khoa học chọn những cây lúa non kháng bệnh đạo ôn: quét chỉ thị phân tử, rồi chạm vào những cây sáng để chuyển sang khay Giữ lại. Chọn xong, em bấm <b>“Gieo thử”</b> để kiểm tra.</p>
+    <div><button class="qbtn nudge" id="c-scan">Quét chỉ thị phân tử</button><button class="qbtn alt" id="c-sow" disabled>Gieo thử</button><button class="qbtn alt hide" id="c-again">↺ Chọn lại</button></div>
     <div class="legend hide" id="c-leg"><span class="mkdot"></span>Chỉ thị phân tử liên kết với gene kháng bệnh đạo ôn</div>
     <div class="fb" id="c-fb"></div>
   </div>
@@ -1156,34 +1168,42 @@ function act2c(P, V){
   const kept=[]; let scanned=false, sown=false;
   const view = (typeof THREE!=='undefined' && THREE.OrbitControls) ? seedView3D(V,has,pick) : seedView2D(V,has,pick);
   function status(){
-    const goodN=kept.filter(i=>has.includes(i)).length;
-    $('#c-count').textContent=`Đã giữ lại ${goodN}/3`;
-    const allOk = kept.length===3 && goodN===3;
-    $('#c-sow').disabled=!allOk || sown; $('#c-sow').classList.toggle('nudge',allOk&&!sown);
-    return allOk;
+    $('#c-count').textContent=`Đã giữ lại ${kept.length} cây`;
+    const can = scanned && kept.length>0 && !sown;
+    $('#c-sow').disabled=!can; $('#c-sow').classList.toggle('nudge',can);
   }
   function pick(i){
     if(sown) return;
     if(!scanned){ fbShow(fb,'info','Em bấm <b>“Quét chỉ thị phân tử”</b> trước để biết cây nào mang gene kháng bệnh nhé.'); return; }
     const k=kept.indexOf(i);
-    if(k>=0){ kept.splice(k,1); view.setKept(kept); status(); fb.className='fb'; return; }
-    kept.push(i); view.setKept(kept);
-    const ok=status();
-    if(!has.includes(i)) fbShow(fb,'info',`Cây ${i+1} <b>không có chỉ thị phân tử</b> nên không mang gene kháng bệnh. Em chạm vào cây đó trong khay Giữ lại để bỏ ra nhé.`);
-    else if(ok){ fbShow(fb,'ok','<b>Chính xác!</b> Nhờ chỉ thị phân tử, ta nhận biết cây kháng bệnh ngay khi cây còn non, không cần chờ cây lớn.'); say('Chính xác! Bây giờ em bấm <b>“Gieo thử”</b> để xem các cây phát triển ra sao.'); }
+    if(k>=0) kept.splice(k,1); else kept.push(i);
+    view.setKept(kept); status();
+    if(kept.length) fbShow(fb,'info',`Khay Giữ lại đang có <b>${kept.length} cây</b>. Chạm lại vào cây để bỏ ra; chọn xong, em bấm <b>“Gieo thử”</b>.`);
     else fb.className='fb';
   }
   status();
   $('#c-scan').onclick=()=>{
     if(scanned) return;
     $('#c-scan').disabled=true; $('#c-scan').classList.remove('nudge'); $('#c-scan').textContent='Đang quét…';
-    view.scan(()=>{ scanned=true; $('#c-leg').classList.remove('hide'); $('#c-scan').textContent='Đã quét';
+    view.scan(()=>{ scanned=true; status(); $('#c-leg').classList.remove('hide'); $('#c-scan').textContent='Đã quét';
       say('Những cây có chỉ thị phân tử sẽ <b>sáng lên</b>, đó là những cây mang gene kháng bệnh vì chỉ thị này liên kết với gene kháng bệnh. Trong thực tế, chỉ thị phân tử không nhìn thấy bằng mắt: nhà khoa học lấy mẫu lá non, tách DNA và phân tích để tìm chỉ thị; ở đây cây sáng lên chỉ là hình minh hoạ. Em chạm vào các cây sáng để giữ lại.'); });
   };
+  const names=a=>a.map(i=>'Cây '+(i+1)).join(', ');
   $('#c-sow').onclick=()=>{
-    sown=true; $('#c-sow').disabled=true; $('#c-sow').classList.remove('nudge');
-    view.sow(kept);
-    fbShow(fb,'ok','Các cây được giữ lại <b>khoẻ mạnh</b>; các cây không mang gene kháng bệnh xuất hiện <b>đốm bệnh đạo ôn</b> trên lá.');
+    sown=true; status();
+    view.sow(kept);   // cây mang gene kháng bệnh thì khoẻ, cây không mang thì bị đạo ôn
+    const wrong=kept.filter(i=>!has.includes(i)).sort((a,b)=>a-b);
+    const missed=has.filter(i=>!kept.includes(i)).sort((a,b)=>a-b);
+    if(wrong.length || missed.length){
+      const parts=[];
+      if(wrong.length) parts.push(`<b>${names(wrong)}</b> trong khay Giữ lại <b>bị bệnh đạo ôn</b> vì không có chỉ thị phân tử, tức là không mang gene kháng bệnh.`);
+      if(missed.length) parts.push(`Em đã bỏ sót <b>${names(missed)}</b>: cây có chỉ thị phân tử nên mang gene kháng bệnh và vẫn khoẻ mạnh.`);
+      fbShow(fb,'no','<b>Chưa đúng rồi!</b> '+parts.join(' ')+' Em bấm <b>“Chọn lại”</b> và chỉ giữ những cây sáng nhé.');
+      say('Kết quả gieo thử cho thấy: cây không có chỉ thị phân tử thì không mang gene kháng bệnh nên bị bệnh đạo ôn. Em bấm <b>“Chọn lại”</b> để chọn đúng những cây sáng nhé.');
+      $('#c-again').classList.remove('hide'); $('#c-again').classList.add('nudge');
+      return;
+    }
+    fbShow(fb,'ok','<b>Chính xác!</b> Các cây được giữ lại đều <b>khoẻ mạnh</b>; các cây không mang gene kháng bệnh xuất hiện <b>đốm bệnh đạo ôn</b> trên lá. Nhờ chỉ thị phân tử, ta nhận biết cây kháng bệnh ngay khi cây còn non, không cần chờ cây lớn.');
     say('Các cây giữ lại khoẻ mạnh, còn các cây không mang gene kháng bệnh bị đốm bệnh đạo ôn. Em trả lời câu hỏi bên dưới nhé: vì sao có thể nhận biết cây kháng bệnh ngay từ khi còn non?');
     const q=$('#c-q'); q.classList.remove('hide');
     quiz(q,{q:'Vì sao có thể nhận biết cây kháng bệnh ngay từ khi còn non?',
@@ -1194,6 +1214,7 @@ function act2c(P, V){
       onDone:()=>unlock(3)});
     setTimeout(()=>q.scrollIntoView({behavior:'smooth',block:'nearest'}),300);
   };
+  $('#c-again').onclick=()=>{ c2Has=has; go(ACTS.findIndex(a=>a.id==='2c')); };
   return view.cleanup;
 }
 
@@ -1212,7 +1233,7 @@ function seedView2D(V,has,onPick){
     setKept(arr){ seeds.forEach((s,i)=>{ if(!arr.includes(i)) grid.appendChild(s); }); arr.forEach(i=>keptBox.appendChild(seeds[i])); $('.ph',keptBox).classList.toggle('hide',arr.length>0); },
     scan(cb){ const beam=document.createElement('div'); beam.className='scanbeam'; grid.appendChild(beam);
       setTimeout(()=>{ beam.remove(); V.classList.add('scanned'); cb(); },1700); },
-    sow(arr){ seeds.forEach((s,i)=>{ s.classList.add(arr.includes(i)?'healthy':'sick'); s.disabled=true; $('.nm',s).textContent= arr.includes(i)?'Khoẻ mạnh':'Bị bệnh đạo ôn'; }); },
+    sow(arr){ seeds.forEach((s,i)=>{ const ok=has.includes(i); s.classList.add(ok?'healthy':'sick'); s.disabled=true; $('.nm',s).textContent= ok?'Khoẻ mạnh':'Bị bệnh đạo ôn'; }); },
     cleanup:null
   };
 }
@@ -1259,8 +1280,8 @@ function seedView3D(V,has,onPick){
   tray(TX[1],0xfff4d9,0xd8bf86);
   const NC=COLS.length; const slotPos=(t,k)=>new THREE.Vector3(TX[t]+COLS[k%NC],.12,ROWS[(k/NC)|0]);
 
-  // cây lúa non
-  const BLADES=[{a:0,len:1.35,tilt:.06,bend:.12,c:1},{a:2.1,len:1.02,tilt:.36,bend:.34,c:0},{a:4.2,len:1.08,tilt:.34,bend:.34,c:0},{a:1.05,len:.86,tilt:.5,bend:.28,c:1},{a:3.2,len:.92,tilt:.46,bend:.3,c:1},{a:5.2,len:.8,tilt:.55,bend:.26,c:0}];
+  // cây lúa non (mạ): mỗi chậu một khóm vài dảnh, mỗi dảnh có bẹ lá thon và 3–4 lá hẹp dài, lá già xoè cong ra ngoài
+  const TILLERS=[{x:0,z:0,a:0,h:1},{x:.07,z:.04,a:2.3,h:.86},{x:-.06,z:.05,a:4.4,h:.8},{x:.01,z:-.07,a:1.2,h:.74}];
   const DNA_COLS=[0x5aa9e6,0xe0719a,0x3fbf7f,0xf08a3c];
   const plants=[], pickables=[], labels=[];
   const spotGeo=new THREE.PlaneGeometry(1,1), spotMat=new THREE.MeshPhongMaterial({map:TEX_BLAST,transparent:true,depthWrite:false,side:THREE.DoubleSide,shininess:5,polygonOffset:true,polygonOffsetFactor:-2});
@@ -1275,10 +1296,20 @@ function seedView3D(V,has,onPick){
     const leafOpt={map:TEX_LEAF,bumpMap:TEX_LEAF,bumpScale:.004,side:THREE.DoubleSide,shininess:38,specular:0x2a3a1a};
     const lm=[mat(0xd2dec8,leafOpt),mat(0xffffff,leafOpt)];
     const spots=[];
-    BLADES.forEach((b,k)=>{
-      const m=new THREE.Mesh(leafGeo(b.len*1.2,.17,b.bend),lm[b.c]); m.rotation.order='YXZ'; m.rotation.y=b.a+i*.7; m.rotation.x=b.tilt; m.castShadow=true; leafG.add(m);
-      if(k<5) [.3,.5,.7].forEach((t,j)=>{ if((k+j)%3===2) return; const L=b.len*1.2, wid=.17*(1-.93*t); const slope=2*b.bend*t/L;
-        [1,-1].forEach(sd=>{ const sp=new THREE.Mesh(spotGeo,spotMat); sp.scale.set(wid*.8,wid*2.6,1); sp.position.set(rnd(-.15,.15)*wid,t*L,b.bend*t*t+sd*.003); sp.rotation.x=Math.atan(slope); sp.visible=false; m.add(sp); spots.push(sp); }); });
+    TILLERS.forEach((tl,ti)=>{
+      const tg=new THREE.Group(); tg.position.set(tl.x,0,tl.z); tg.rotation.y=tl.a+i*.9; leafG.add(tg);
+      const sheath=new THREE.Mesh(new THREE.CylinderGeometry(.016,.024,.3*tl.h,10),lm[0]); sheath.position.y=.15*tl.h; sheath.rotation.z=(tl.x||.02)*1.2; sheath.castShadow=true; tg.add(sheath);
+      const nL=ti===0?4:3;
+      for(let k=0;k<nL;k++){
+        const young=k===nL-1, len=(young?1.25:1.05-k*.12)*tl.h*rnd(.92,1.06);
+        const arc=young?rnd(.2,.4):rnd(1.0,1.6)-k*.15, tilt=young?rnd(.02,.1):rnd(.18,.34);
+        const geo=riceLeafGeo(len,.06,arc);
+        const m=new THREE.Mesh(geo,lm[(k+ti)%2]); m.rotation.order='YXZ';
+        m.rotation.y=k*Math.PI+rnd(-.35,.35); m.rotation.x=tilt; m.position.y=(.06+k*.05)*tl.h; m.castShadow=true; tg.add(m);
+        // đốm bệnh đạo ôn (ẩn, chỉ hiện khi cây bị bệnh) trên các lá già
+        if(!young && ti<3) [.35,.6].forEach((t,j)=>{ if((k+j+ti)%3===2) return; const r=geo.userData.rows[Math.round(t*18)];
+          [1,-1].forEach(sd=>{ const sp=new THREE.Mesh(spotGeo,spotMat); sp.scale.set(.05,.15,1); sp.position.set(rnd(-.006,.006),r.y-Math.sin(r.th)*.005*sd,r.z+Math.cos(r.th)*.012*sd); sp.rotation.x=r.th; sp.visible=false; m.add(sp); spots.push(sp); }); });
+      }
     });
     // thẻ DNA đặt nghiêng phía trước chậu
     const card=new THREE.Group(); card.position.set(0,.2,.5); card.rotation.x=-.75; g.add(card);
@@ -1341,7 +1372,7 @@ function seedView3D(V,has,onPick){
   const v=new THREE.Vector3(), yellow=new THREE.Color(0xffd98a), dark=new THREE.Color(0xd2dec8), light=new THREE.Color(0xffffff);
   let raf,last=performance.now(),litAt=0;
   function frame(now){
-    raf=requestAnimationFrame(frame); const dt=Math.min((now-last)/1000,.05); last=now;
+    raf=requestAnimationFrame(frame); const dt=Math.max(0,Math.min((now-last)/1000,.05)); last=now;
     if(tween){ tween.t=Math.min(1,tween.t+dt/1.1); const k=ease(tween.t); camera.position.lerpVectors(tween.from,tween.to,k); controls.target.lerpVectors(tween.tf,new THREE.Vector3(),k); if(tween.t>=1) tween=null; }
     // quét
     if(scanT>=0){
@@ -1372,7 +1403,7 @@ function seedView3D(V,has,onPick){
     scan(cb){ scanCb=cb; scanT=0; gantry.visible=true; gantry.position.x=TX[0]-TW/2; },
     sow(arr){
       sown=true; cvs.style.cursor='';
-      plants.forEach((p,i)=>{ const ok=arr.includes(i);
+      plants.forEach((p,i)=>{ const ok=p.has;
         if(ok){ p.growTo=1.35; p.el.textContent='Khoẻ mạnh'; p.el.className='lbl seedtag ok'; }
         else { p.growTo=.92; p.sick=.01; p.el.textContent='Bị bệnh đạo ôn'; p.el.className='lbl seedtag bad'; }
       });
