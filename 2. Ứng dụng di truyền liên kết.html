@@ -662,7 +662,7 @@ function act2a(P, V){
     {name:'Chiều cao cây',  y: 2.25, c:0x5aa9e6, css:'#5aa9e6'},
     {name:'Kháng sâu',      y: 1.30, c:0x3fbf7f, css:'#3fbf7f', good:1},
     {name:'Năng suất cao',  y: 0.65, c:0xffc93c, css:'#ffc93c', good:1},
-    {name:'Chất lượng tốt', y: 0.00, c:0xf3f3f3, css:'#e6e6e6', good:1},
+    {name:'Giàu dinh dưỡng', y: 0.00, c:0xf08a3c, css:'#f08a3c', good:1},
     {name:'Thời gian chín', y:-1.45, c:0xa66be0, css:'#a66be0'},
     {name:'Màu vỏ hạt',     y:-2.20, c:0x2fc4c4, css:'#2fc4c4'},
   ];
@@ -678,7 +678,8 @@ function act2a(P, V){
     <table class="map"><tr><th>Vị trí trên NST</th><th>Gene quy định</th></tr>
       ${GENES.map((g,i)=>`<tr data-g="${i}"><td>${i+1}</td><td><span class="gdot" style="background:${g.css}"></span>${g.name}</td></tr>`).join('')}</table></div>
   <div class="card hide" id="a-grp"><span class="chip">Nhóm gene tốt</span>
-    <p style="margin:4px 0 0;font-size:14px">Ba gene tốt nằm cạnh nhau trên <b>cùng một NST</b> nên luôn di truyền cùng nhau:</p>
+    <p style="margin:4px 0 0;font-size:14px">Ba gene tốt nằm trên <b>cùng một NST</b> nên di truyền cùng nhau, tạo thành nhóm tính trạng tốt:</p>
+    <p class="muted" style="margin:4px 0 0;font-size:12.5px">Lưu ý: mọi gene trên NST này đều liên kết với nhau; hình chỉ làm nổi bật nhóm gene tốt mà nhà chọn giống quan tâm.</p>
     <div style="margin-top:4px">${GENES.filter(g=>g.good).map(g=>`<span class="chip2"><span class="gdot" style="background:${g.css}"></span> ${g.name}</span>`).join('')}</div></div>
   <div class="card hide" id="a-q"></div>`;
   say('Di truyền liên kết đảm bảo nhóm tính trạng luôn đi cùng với nhau được di truyền bền vững. Điều này có ích gì cho con người? Em hãy chạm vào từng nhãn trên mô hình nhé, bắt đầu với nhãn <b>“Bản đồ gene”</b>.');
@@ -883,7 +884,7 @@ function act2b(P, V){
     <div class="badges" id="b-badges" style="justify-content:flex-start"></div></div>
   <div class="kcard hide" id="b-ex"><div class="kh"><span class="dot"></span>Ví dụ trong thực tế</div>
     <p>Trong chọn giống, người ta chuyển gene để tạo thành <b>nhóm gene liên kết</b> quy định cây trồng có sức đề kháng với <b>thuốc diệt cỏ</b>, <b>thuốc diệt côn trùng</b>, <b>tăng sản lượng</b> hoặc <b>nâng cao giá trị dinh dưỡng</b>.</p></div>`;
-  say('Hôm nay em là <b>nhà chọn giống</b>! Mục tiêu của em là tạo ra một giống cây trồng vừa kháng sâu, vừa cho năng suất cao, vừa giàu dinh dưỡng. Em hãy chọn các gene tốt và kéo vào <b>cùng một nhiễm sắc thể</b> nhé.');
+  say('Hôm nay em là <b>nhà chọn giống</b>! Mục tiêu của em là tạo ra một giống cây trồng mang nhiều tính trạng tốt, như kháng sâu, kháng thuốc diệt cỏ, năng suất cao hay giàu dinh dưỡng. Em hãy chọn 3 gene tốt và kéo vào <b>cùng một nhiễm sắc thể</b> nhé.');
   const view = (typeof THREE!=='undefined' && THREE.OrbitControls) ? breedView3D(V) : breedView2D(V);
   const cards=Object.entries(TRAITS).map(([id,t])=>({id,html:`<span class="gdot" style="background:${t.css}"></span>${t.name}`}));
   const fb=$('#b-fb');
@@ -1177,7 +1178,7 @@ function act2c(P, V){
     if(scanned) return;
     $('#c-scan').disabled=true; $('#c-scan').classList.remove('nudge'); $('#c-scan').textContent='Đang quét…';
     view.scan(()=>{ scanned=true; $('#c-leg').classList.remove('hide'); $('#c-scan').textContent='Đã quét';
-      say('Những cây có chỉ thị phân tử sẽ <b>sáng lên</b>, đó là những cây mang gene kháng bệnh vì chỉ thị này liên kết với gene kháng bệnh. Em chạm vào các cây sáng để giữ lại.'); });
+      say('Những cây có chỉ thị phân tử sẽ <b>sáng lên</b>, đó là những cây mang gene kháng bệnh vì chỉ thị này liên kết với gene kháng bệnh. Trong thực tế, chỉ thị phân tử không nhìn thấy bằng mắt: nhà khoa học lấy mẫu lá non, tách DNA và phân tích để tìm chỉ thị; ở đây cây sáng lên chỉ là hình minh hoạ. Em chạm vào các cây sáng để giữ lại.'); });
   };
   $('#c-sow').onclick=()=>{
     sown=true; $('#c-sow').disabled=true; $('#c-sow').classList.remove('nudge');
