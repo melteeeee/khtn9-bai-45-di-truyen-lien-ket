@@ -101,6 +101,12 @@ button{font-family:inherit}
 .opt.ok i{background:var(--brand);color:#fff}
 .opt.no{border-color:var(--bad);background:#fbeae4;color:#a54527}
 .opt.no i{background:var(--bad);color:#fff}
+/* câu chọn nhiều đáp án: ô checkbox vuông */
+.opt i.cb{border-radius:6px;background:#fff;border:2px solid var(--brand-light);color:transparent;font-size:15px}
+.opt.sel i.cb{background:var(--brand);border-color:var(--brand);color:#fff}
+.opt.ok i.cb{background:var(--brand);border-color:var(--brand);color:#fff}
+.opt.no i.cb{background:var(--bad);border-color:var(--bad);color:#fff;font-size:0}
+.opt.no i.cb::before{content:'✕';font-size:13px}
 .fb{display:none;margin:9px 0 0;padding:10px 13px;border-radius:var(--r-sm);font-size:14px;line-height:1.6}
 .fb.show{display:block}
 .fb.ok{background:var(--brand-soft);color:var(--brand-dark)}
@@ -177,7 +183,7 @@ table.cmp td.slot .dc{display:flex;width:100%}
 .lines3d circle{fill:#fff;stroke:var(--brand);stroke-width:2}
 .lbl{position:absolute;left:0;top:0;pointer-events:none;font-weight:700;font-size:14px;color:#fff;transform:translate(-50%,-50%);white-space:nowrap;z-index:4;transition:opacity .3s}
 .lbl.g{background:#fff;color:var(--ink);border-radius:7px;min-width:24px;text-align:center;padding:1px 7px;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.28)}
-.lbl.gam{background:rgba(15,63,61,.78);border:1.5px solid rgba(255,255,255,.55);border-radius:99px;padding:4px 12px;font-size:13px}
+.lbl.gam{background:rgba(15,63,61,.78);border:1.5px solid rgba(255,255,255,.55);border-radius:99px;padding:5px 14px;font-size:15px}
 .tagbtn{white-space:nowrap;position:absolute;z-index:5;transform:translate(-50%,-50%);padding:7px 14px;border-radius:10px;border:1.5px solid #e9c9a4;background:#fdebd5;color:#6b3f17;font-weight:700;font-size:14px;cursor:pointer;box-shadow:var(--sh-3)}
 .tagbtn.l{transform:translate(0,-50%)}
 .tagbtn.r{transform:translate(-100%,-50%)}
@@ -430,12 +436,13 @@ function board(root, cards, correct, onChange){
 function quiz(host, {q, opts, multi=false, correct, ok, bad, hint, onDone}){
   let wrong=0, done=false; const chosen=new Set();
   const L='ABCDEFG';
-  host.innerHTML = `<h3>Chọn đáp án đúng</h3><p style="margin:0">${q}</p><div class="opts">${
-    opts.map((o,i)=>`<button class="opt" data-i="${i}"><i>${L[i]}</i><span>${o}</span></button>`).join('')
+  host.innerHTML = `<h3>${multi?'Chọn các đáp án đúng':'Chọn đáp án đúng'}</h3><p style="margin:0">${q}</p><div class="opts">${
+    opts.map((o,i)=>`<button class="opt" data-i="${i}" ${multi?'role="checkbox" aria-checked="false"':''}>${multi?'<i class="cb">✓</i>':`<i>${L[i]}</i>`}<span>${o}</span></button>`).join('')
   }</div>${multi?'<div><button class="qbtn q-check" disabled>Kiểm tra</button></div>':''}<div class="fb"></div>`;
   const fb = $('.fb',host);
   const show=(cls,t)=>{ fb.className='fb show '+cls; fb.innerHTML=t; };
   function finish(good){
+    good?SFX.ok():SFX.no();
     if(good){ done=true; show('ok','<b>Chính xác!</b> '+ok); $$('.opt',host).forEach(o=>o.disabled=true); onDone&&onDone(); return; }
     wrong++;
     wrong>=2 ? show('info','<b>Cô gợi ý:</b> '+hint) : show('no',bad);
@@ -444,7 +451,7 @@ function quiz(host, {q, opts, multi=false, correct, ok, bad, hint, onDone}){
     if(done) return;
     const i=+b.dataset.i;
     if(multi){
-      b.classList.toggle('sel'); chosen.has(i)?chosen.delete(i):chosen.add(i);
+      b.classList.toggle('sel'); chosen.has(i)?chosen.delete(i):chosen.add(i); b.setAttribute('aria-checked',chosen.has(i));
       $('.q-check',host).disabled = chosen.size===0;
     } else {
       $$('.opt',host).forEach(o=>o.classList.remove('no','ok'));
@@ -460,13 +467,40 @@ function quiz(host, {q, opts, multi=false, correct, ok, bad, hint, onDone}){
 }
 const fbShow=(el,cls,html)=>{ el.className='fb show '+cls; el.innerHTML=html; };
 
+/* Hiệu ứng âm thanh (tổng hợp bằng Web Audio, không cần file) */
+const SFX=(()=>{
+  let ac=null;
+  const ctx=()=>{ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } } if(ac.state==='suspended') ac.resume(); return ac; };
+  function tone(f0,f1,dur,type='sine',vol=.14,delay=0){ const a=ctx(); if(!a) return; const t=a.currentTime+delay, o=a.createOscillator(), g=a.createGain();
+    o.type=type; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.015); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t+dur+.03); }
+  function whoosh(dur=.7,vol=.16){ const a=ctx(); if(!a) return; const t=a.currentTime, n=a.sampleRate*dur, buf=a.createBuffer(1,n,a.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<n;i++) d[i]=Math.random()*2-1;
+    const src=a.createBufferSource(); src.buffer=buf; const bp=a.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=1.2;
+    bp.frequency.setValueAtTime(300,t); bp.frequency.exponentialRampToValueAtTime(2600,t+dur*.6); bp.frequency.exponentialRampToValueAtTime(600,t+dur);
+    const g=a.createGain(); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+dur*.4); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    src.connect(bp).connect(g).connect(a.destination); src.start(t); }
+  function buzz(dur=1.2,vol=.05){ const a=ctx(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), lfo=a.createOscillator(), lg=a.createGain(), g=a.createGain(), lp=a.createBiquadFilter();
+    o.type='sawtooth'; o.frequency.value=205; lfo.frequency.value=23; lg.gain.value=vol*.6; lp.type='lowpass'; lp.frequency.value=1400;
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.15); g.gain.setValueAtTime(vol,t+dur-.3); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    lfo.connect(lg).connect(g.gain); o.connect(lp).connect(g).connect(a.destination); o.start(t); lfo.start(t); o.stop(t+dur+.05); lfo.stop(t+dur+.05); }
+  return {
+    ok(){ tone(660,660,.13); tone(990,990,.22,'sine',.14,.11); },
+    no(){ tone(240,150,.28,'triangle',.15); },
+    pop(){ tone(420,980,.1,'sine',.11); },
+    whoosh, buzz,
+    tada(){ [523,659,784,1047].forEach((f,i)=>tone(f,f,i===3?.45:.2,'triangle',.11,i*.09)); }
+  };
+})();
+
 /* ---------- file voice thuyết minh: dán đường dẫn mp3 vào đúng khoá; để trống = không phát ----------
    Lời đọc của từng khoá nằm trong tts/tts_phan_1_bai_45.json (khoá ghi trong dấu [ ] ở cuối tên file). */
 const AUDIO = {
   // Bước 1: Thí nghiệm của Morgan
-  p: '', f1: '', fa: '',
+  p: '', pCross: '', f1: '', lp: '', fa: '',
   // Bước 2: Nếu theo Mendel?
-  mendel: '', q3: '',
+  mendel: '', mendelB: '', q3: '',
   // Bước 3: Giải thích (3D)
   cell: '', pair: '', genes: '', meioL: '', gam2: '', fert: '', indep: '', meioI: '',
   // Bước 4: Khái niệm
@@ -497,7 +531,7 @@ $('#btnExplore').onclick=()=>{ $('#intro').classList.add('gone'); started=true; 
 /* ============ điều hướng ============ */
 const ACTS = [
   {id:'1a', name:'Thí nghiệm của Morgan', fn:act1a},
-  {id:'1b', name:'Nếu theo Mendel?', fn:act1b, wide:true},
+  {id:'1b', name:'Nếu theo Mendel?', fn:act1b},
   {id:'1c', name:'Giải thích', fn:act1c},
   {id:'1d', name:'Khái niệm', fn:act1d},
   {id:'1e', name:'So sánh hai quy luật', fn:act1e, wide:true},
@@ -526,111 +560,269 @@ function go(i){
 $('#btnPrev').onclick=()=>go(cur-1);
 $('#btnNext').onclick=()=>{ if(cur<ACTS.length-1) go(cur+1); };
 
-/* ============ 1a – Thí nghiệm của Morgan ============ */
+/* ============ 1a – Thí nghiệm của Morgan (cảnh 3D ruồi giấm) ============ */
+// Cánh ruồi giấm thật: thuôn, gốc hẹp, đầu tròn, có các gân dọc L1–L5 và hai gân ngang. Gốc cánh tại (0,0), đầu cánh hướng −x.
+let _wingGeo=null;
+function wingShape(){ const sh=new THREE.Shape(); sh.moveTo(0,.02);
+  sh.bezierCurveTo(-.4,.14,-1.0,.33,-1.7,.33); sh.bezierCurveTo(-2.15,.33,-2.38,.2,-2.36,0);
+  sh.bezierCurveTo(-2.34,-.2,-2.1,-.34,-1.7,-.35); sh.bezierCurveTo(-1.1,-.36,-.45,-.2,0,-.03); return sh; }
+function wingGeo(){ return _wingGeo || (_wingGeo=new THREE.ShapeGeometry(wingShape(),24)); }
+function wingVeins(){
+  const grp=new THREE.Group(), mt=new THREE.LineBasicMaterial({color:0x6e5d48,transparent:true,opacity:.6});
+  const V=[[[-.1,.06],[-.6,.2],[-1.2,.3],[-1.75,.32]],[[-.3,.06],[-1.0,.2],[-1.8,.27],[-2.22,.17]],[[-.3,.02],[-1.2,.06],[-2.33,0]],
+    [[-.3,-.02],[-1.2,-.08],[-2.22,-.2]],[[-.3,-.06],[-1.0,-.2],[-1.75,-.31]],[[-1.05,.07],[-1.05,-.1]],[[-1.5,-.12],[-1.5,-.27]]];
+  V.forEach(pts=>{ const c=new THREE.CatmullRomCurve3(pts.map(([x,y])=>new THREE.Vector3(x,y,.004))); grp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(c.getPoints(20)),mt)); });
+  const edge=wingShape().getPoints(40).map(p=>new THREE.Vector3(p.x,p.y,.004));
+  grp.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(edge),new THREE.LineBasicMaterial({color:0x8a7a66,transparent:true,opacity:.45})));
+  return grp; }
+// Mô hình ruồi giấm 3D dựng bằng hình khối: body 'xam'|'den', wing 'dai'|'cut'. Ruồi quay đầu theo trục +x.
+function makeFly3D(body, wing){
+  const g=new THREE.Group();
+  const bc = body==='xam'?0x6e6656:0x262321, sc = body==='xam'?0x4a443a:0x0a0909;
+  const m=(c,o={})=>new THREE.MeshPhongMaterial(Object.assign({color:c,shininess:45,specular:0x2a2a2a},o));
+  const ell=(r,sx,sy,sz,mat,x,y,z)=>{ const e=new THREE.Mesh(new THREE.SphereGeometry(r,32,22),mat); e.scale.set(sx,sy,sz); e.position.set(x,y,z); g.add(e); return e; };
+  ell(.42,1.15,.95,1,m(bc),.15,.45,0);                       // ngực
+  ell(.32,1,.95,1.1,m(bc),.72,.5,0);                         // đầu
+  [-1,1].forEach(s=>ell(.19,.85,1.1,.8,m(0xc22a2a,{shininess:90}),.8,.55,s*.24));   // mắt đỏ
+  // bụng có vằn ngang (tô màu theo đỉnh)
+  const ag=new THREE.SphereGeometry(.5,36,24), pos=ag.attributes.position, col=[];
+  const c1=new THREE.Color(bc), c2=new THREE.Color(sc);
+  for(let i=0;i<pos.count;i++){ const x=pos.getX(i), y=pos.getY(i); const band=Math.floor((x+.5)*7)%2===1 && y>-.15; const c=band?c2:c1; col.push(c.r,c.g,c.b); }
+  ag.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  const ab=new THREE.Mesh(ag,new THREE.MeshPhongMaterial({vertexColors:true,shininess:45,specular:0x2a2a2a})); ab.scale.set(1.55,.85,.95); ab.position.set(-.78,.4,0); g.add(ab);
+  // 6 chân
+  const lm=m(0x1d1b19);
+  [[.38,.38],[.15,0],[-.08,-.4]].forEach(([x,dx])=>[-1,1].forEach(s=>{
+    const cv=new THREE.CatmullRomCurve3([new THREE.Vector3(x,.3,s*.28),new THREE.Vector3(x+dx*.6,.5,s*.75),new THREE.Vector3(x+dx*1.4,0,s*1.05)]);
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(cv,12,.035,6),lm)); }));
+  // râu
+  [-1,1].forEach(s=>{ const a=new THREE.Mesh(new THREE.ConeGeometry(.05,.22,8),lm); a.position.set(1.0,.62,s*.1); a.rotation.z=-1.1; g.add(a); });
+  // cánh
+  const wings=[];
+  const wm=(op,c)=>new THREE.MeshPhongMaterial({color:c,transparent:true,opacity:op,side:THREE.DoubleSide,shininess:100,specular:0xffffff,depthWrite:false});
+  [-1,1].forEach(s=>{
+    const piv=new THREE.Group(); piv.position.set(.25,.82,s*.18); g.add(piv);
+    let w;
+    if(wing==='dai'){ w=new THREE.Mesh(wingGeo(),wm(.38,0xeef3f6)); w.add(wingVeins()); w.rotation.set(-Math.PI/2,0,0); w.scale.y=-s;
+      piv.position.set(-.04,.76+(s>0?.012:0),s*.24); piv.rotation.set(0,s*.05,-.1);
+      // khớp cánh: gắn gốc cánh vào mặt bên ngực
+      const hinge=new THREE.Mesh(new THREE.SphereGeometry(.1,16,12),m(bc)); hinge.scale.set(1.4,.8,.9); hinge.position.set(-.02,.74,s*.25); g.add(hinge); }
+    else { w=new THREE.Mesh(new THREE.CircleGeometry(1,24),wm(.75,0xcfe0ee)); w.scale.set(.26,.12,1); w.position.set(-.15,.02,s*.08); w.rotation.set(-Math.PI/2+.5*s,.4,0); piv.rotation.y=s*.6; }
+    piv.add(w); wings.push(piv);
+  });
+  g.userData={wings,wing,phase:Math.random()*6.28};
+  return g;
+}
 function act1a(P, V){
-  V.innerHTML = `<div class="vcard"><h4>Sơ đồ thí nghiệm của Morgan</h4><div class="flow" style="display:flex;flex-direction:column;gap:8px">
-    <div class="sb" id="b-p"><div class="h">Ptc</div><div class="cross">${F_XD()}<span class="times">×</span>${F_DC()}</div></div>
-    <div class="sb" id="b-f1"><div class="h">F1 <span class="tagc">Tính trạng trội</span></div><div class="cross">${F_XD()}<b>100% thân xám, cánh dài</b></div></div>
-    <div class="sb" id="b-lp"><div class="h">Lai phân tích</div><div class="cross">${F_XD(false)}<small>♂ F1</small><span class="times">×</span>${F_DC(false)}<small>♀ thân đen, cánh cụt</small></div></div>
-    <div class="sb" id="b-fa"><div class="h">Fa</div><div class="cross">${F_XD()}${F_DC()}</div>
-      <div class="bar"><span style="width:50%;background:#7b8791">50% xám, dài</span><span style="width:50%;background:#2b2b2b">50% đen, cụt</span></div></div>
-  </div></div>`;
+  V.className='v3d'; V.style.cssText='position:absolute;inset:0;z-index:0;overflow:hidden;display:block';
+  V.innerHTML=`<div class="hud" id="a-hud">Kéo để xoay · cuộn để phóng to</div>`;
   P.innerHTML = `
   <h2>Thí nghiệm của Morgan</h2>
-  <div class="card" id="a-card">
-    <span class="chip">Nhiệm vụ</span><span class="counter" id="a-steps">Bước 1/2</span>
-    <h3 id="a-h">Bước 1: Tạo thế hệ F1</h3>
-    <p class="muted" style="margin:0;font-size:13.5px" id="a-sub"></p>
-    <div class="tray" id="a-tray"></div>
-    <h3 style="margin-top:12px">Hộp lai</h3>
-    <div class="slots2" id="a-slots"><div class="slot" data-cell="s1">Thả ruồi vào đây</div><div class="slot" data-cell="s2">Thả ruồi vào đây</div></div>
-    <div><button class="qbtn alt hide" id="a-redo">↺ Xem lại thí nghiệm</button></div>
-  </div>
-  <div class="card hide" id="a-q"></div>`;
-  say('Thomas Hunt Morgan là người đầu tiên phát hiện hiện tượng di truyền liên kết trên ruồi giấm vào năm 1910. Chúng mình cùng làm lại thí nghiệm của ông nhé. <b>Bước 1:</b> em kéo ruồi thân xám, cánh dài và ruồi thân đen, cánh cụt vào hộp lai. Đó là thế hệ P thuần chủng.','p');
-  let phase=1, b;
-  function setup(cards, sub){
-    $('#a-tray').innerHTML='';
-    $$('#a-slots .slot').forEach(sl=>{sl.className='slot'; sl.textContent='Thả ruồi vào đây'});
-    b = board($('#a-card'), cards, {s1:null,s2:null}, n=>{ if(n===2){ b.lock(); finishPhase(); } });
-    $('#a-sub').textContent = sub;
-  }
-  function finishPhase(){
-    if(phase===1){
-      $('#b-p').classList.add('show');
-      setTimeout(()=>$('#b-f1')?.classList.add('show'),500);
-      say('<b>F1</b> xuất hiện: 100% ruồi thân xám, cánh dài. Vậy thân xám và cánh dài là tính trạng trội, thân đen và cánh cụt là tính trạng lặn. <b>Bước 2:</b> em kéo ruồi đực F1 và ruồi cái thân đen, cánh cụt vào hộp lai. Đây gọi là lai phân tích.','f1');
-      setTimeout(()=>{ if(!document.body.contains(P)) return;   // đã chuyển sang bước khác
-        phase=2; $('#a-h').textContent='Bước 2: Lai phân tích'; $('#a-steps').textContent='Bước 2/2';
-        setup([{id:'f1',html:F_XD(true).replace('Thân xám, cánh dài','♂ F1: xám, dài'),cls:'flyc'},{id:'cd',html:F_DC(true).replace('Thân đen, cánh cụt','♀ đen, cụt'),cls:'flyc'}],'Kéo ruồi đực F1 và ruồi cái thân đen, cánh cụt vào hộp lai phân tích.'); },1400);
-    } else {
-      $('#b-lp').classList.add('show');
-      setTimeout(()=>$('#b-fa')?.classList.add('show'),500);
-      $('#a-steps').textContent='Đã xong 2/2';
-      $('#a-redo').classList.remove('hide');
-      say('<b>Kết quả:</b> ở thế hệ Fa, có 50% ruồi thân xám, cánh dài và 50% ruồi thân đen, cánh cụt. Em trả lời <b>câu hỏi 1</b> nhé.','fa');
-      const q=$('#a-q'); q.classList.remove('hide');
-      quiz(q,{q:'Câu hỏi 1: Phép lai trên gồm những tính trạng nào? (chọn nhiều đáp án)',multi:true,
-        opts:['Màu sắc thân','Kích thước cánh','Màu mắt','Tuổi thọ'],correct:[0,1],
-        ok:'Gồm tính trạng màu sắc thân (thân xám, thân đen) và tính trạng kích thước cánh (cánh dài, cánh cụt).',
-        bad:'Chưa đúng rồi, em xem lại những đặc điểm khác nhau giữa ruồi bố mẹ nhé.',
-        hint:'ruồi bố mẹ khác nhau về màu thân và về chiều dài cánh.',
-        onDone:()=>unlock(1)});
-      setTimeout(()=>q.scrollIntoView({behavior:'smooth',block:'nearest'}),600);
-    }
-  }
-  setup([{id:'p1',html:F_XD(true).replace('Thân xám, cánh dài','P: xám, dài'),cls:'flyc'},{id:'p2',html:F_DC(true).replace('Thân đen, cánh cụt','P: đen, cụt'),cls:'flyc'}],'Kéo ruồi P vào hộp lai (hoặc chọn thẻ rồi chạm vào ô).');
+  <p class="lead">Morgan lai hai dòng ruồi giấm <b>thuần chủng</b>, khác nhau về hai đặc điểm. Em làm lại thí nghiệm theo 3 phần nhé.</p>
+  <div class="checks"><div class="check" id="ak1"><b>✓</b>1. Quan sát P</div><div class="check" id="ak2"><b>✓</b>2. Tạo F1</div><div class="check" id="ak3"><b>✓</b>3. Lai phân tích</div></div>
+  <div class="card" id="a-c1"><span class="chip">Phần 1</span><h3>Quan sát ruồi bố mẹ (P)</h3>
+    <p class="muted" style="margin:0;font-size:13.5px">Xoay mô hình 3D để quan sát hai con ruồi P. Chúng khác nhau ở những điểm nào?</p>
+    <div id="a-q1" style="margin-top:8px"></div></div>
+  <div class="card hide" id="a-c2"><span class="chip">Phần 2</span><h3>Lai P → F1</h3>
+    <p class="muted" style="margin:0;font-size:13.5px">Cho ruồi thân xám, cánh dài lai với ruồi thân đen, cánh cụt.</p>
+    <div><button class="qbtn" id="a-cross1">▶ Cho lai P</button></div>
+    <div id="a-q2" style="margin-top:8px"></div></div>
+  <div class="card hide" id="a-c3"><span class="chip">Phần 3</span><h3>Lai phân tích</h3>
+    <p style="margin:0;font-size:13.5px"><b>Lai phân tích</b> là cho cơ thể mang tính trạng trội (<b>ruồi đực F1</b>) lai với cơ thể mang tính trạng lặn (<b>ruồi cái thân đen, cánh cụt</b>) để xem F1 tạo ra những loại giao tử nào.</p>
+    <div><button class="qbtn" id="a-cross2">▶ Lai phân tích</button></div>
+    <div id="a-out"></div></div>
+  <div class="kcard hide" id="a-sum"><div class="kh"><span class="dot"></span>Tóm tắt thí nghiệm</div>
+    <p><b>Ptc:</b> thân xám, cánh dài × thân đen, cánh cụt</p>
+    <p><b>F1:</b> 100% thân xám, cánh dài</p>
+    <p><b>Lai phân tích:</b> ♂ F1 × ♀ thân đen, cánh cụt</p>
+    <p><b>Fa:</b> 1 thân xám, cánh dài : 1 thân đen, cánh cụt</p>
+    <div><button class="qbtn alt" id="a-redo">↺ Xem lại thí nghiệm</button></div></div>`;
+  say('Thomas Hunt Morgan đã làm thí nghiệm trên ruồi giấm. Đây là hai con ruồi bố mẹ, gọi là thế hệ <b>P thuần chủng</b>. Em hãy xoay mô hình để quan sát: hai con ruồi khác nhau ở những điểm nào?','p');
   $('#a-redo').onclick=()=>go(0);
+  const reveal=id=>{ const c=$(id); c.classList.remove('hide'); setTimeout(()=>c.scrollIntoView({behavior:'smooth',block:'nearest'}),300); };
+  if(typeof THREE==='undefined' || !THREE.OrbitControls){ V.insertAdjacentHTML('beforeend','<div style="position:absolute;inset:0;display:grid;place-items:center;color:#fff;padding:20px;text-align:center">Không tải được thư viện 3D (Three.js). Hãy kiểm tra kết nối mạng rồi tải lại trang.</div>'); }
+  const S = (typeof THREE!=='undefined' && THREE.OrbitControls) ? flyStage(V) : null;
+  S&&S.showP();
+
+  quiz($('#a-q1'),{q:'<b>Câu hỏi 1:</b> Phép lai trên gồm những tính trạng nào? (chọn nhiều đáp án)',multi:true,
+    opts:['Màu sắc thân','Kích thước cánh','Màu mắt','Tuổi thọ'],correct:[0,1],
+    ok:'Gồm tính trạng <b>màu sắc thân</b> (thân xám, thân đen) và tính trạng <b>kích thước cánh</b> (cánh dài, cánh cụt). Mắt của hai con đều đỏ nên màu mắt không phải tính trạng đang xét.',
+    bad:'Chưa đúng rồi, em xoay mô hình và so sánh kĩ hai con ruồi nhé.',
+    hint:'một con thân xám, con kia thân đen; một con cánh dài, con kia cánh cụt. Mắt của chúng có khác nhau không?',
+    onDone:()=>{ $('#ak1').classList.add('done'); reveal('#a-c2'); say('Bây giờ em bấm <b>“Cho lai P”</b> để xem đời con F1 nhé.','pCross'); }});
+
+  $('#a-cross1').onclick=()=>{
+    $('#a-cross1').disabled=true;
+    const after=()=>{ if(!document.body.contains(P)) return;
+      say('<b>F1</b> xuất hiện: <b>100%</b> ruồi thân xám, cánh dài. Theo em, tính trạng nào là <b>trội</b>?','f1');
+      quiz($('#a-q2'),{q:'F1 toàn ruồi thân xám, cánh dài. Vậy tính trạng trội là:',
+        opts:['Thân xám và cánh dài','Thân đen và cánh cụt','Chưa xác định được'],correct:[0],
+        ok:'F1 chỉ biểu hiện thân xám, cánh dài nên đó là <b>tính trạng trội</b>; thân đen, cánh cụt là <b>tính trạng lặn</b>.',
+        bad:'Chưa đúng rồi, em nhìn lại các con ruồi F1 nhé.',hint:'tính trạng biểu hiện ở F1 khi lai hai dòng thuần chủng là tính trạng trội.',
+        onDone:()=>{ $('#ak2').classList.add('done'); reveal('#a-c3');
+          say('Morgan tiếp tục làm phép <b>lai phân tích</b>: cho ruồi đực F1 lai với ruồi cái thân đen, cánh cụt. Em bấm <b>“Lai phân tích”</b> nhé.','lp'); }});
+      setTimeout(()=>$('#a-q2').scrollIntoView({behavior:'smooth',block:'nearest'}),300);
+    };
+    S ? S.crossP(after) : after();
+  };
+  $('#a-cross2').onclick=()=>{
+    $('#a-cross2').disabled=true;
+    const after=()=>{ if(!document.body.contains(P)) return;
+      $('#a-out').innerHTML=`<div class="zy"><div>${F_XD(true,'sm')}<b>50%</b></div><div>${F_DC(true,'sm')}<b>50%</b></div></div>
+        <div class="bar"><span style="width:50%;background:#7b8791">1 thân xám, cánh dài</span><span style="width:50%;background:#2b2b2b">1 thân đen, cánh cụt</span></div>
+        <div class="fb show ok" style="margin-top:8px">Fa chỉ có <b>2 kiểu hình</b> với tỉ lệ <b>1 : 1</b>, giống hệt hai con ruồi P ban đầu.</div>`;
+      $('#ak3').classList.add('done'); reveal('#a-sum');
+      say('<b>Kết quả:</b> ở thế hệ Fa, có 50% ruồi thân xám, cánh dài và 50% ruồi thân đen, cánh cụt. Không có con nào thân xám, cánh cụt hay thân đen, cánh dài. Kết quả này có gì lạ không? Em bấm ▶ để cùng tìm hiểu nhé.','fa');
+      unlock(1);
+    };
+    S ? S.crossTest(after) : after();
+  };
+  return S ? S.dispose : null;
+}
+
+// Sân khấu 3D cho bước 1: P → F1 → lai phân tích → Fa
+// Khung cảnh 3D dùng chung cho bước 1 và 2: đĩa nuôi ruồi, camera né bảng bài học, nhãn HTML, ruồi xuất hiện/biến mất mượt
+function stage3D(V){
+  const host=V;
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); host.appendChild(renderer.domElement);
+  const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(45,1,.1,200);
+  const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.enablePan=false; controls.minDistance=3; controls.maxDistance=40; controls.maxPolarAngle=Math.PI*.48;
+  scene.add(new THREE.AmbientLight(0xffffff,.5)); const dl=new THREE.DirectionalLight(0xffffff,.75); dl.position.set(4,9,6); scene.add(dl);
+  scene.add(new THREE.HemisphereLight(0xe8fbff,0x1b4d4a,.4));
+  const dish=new THREE.Mesh(new THREE.CylinderGeometry(6.4,6.4,.12,72),new THREE.MeshPhongMaterial({color:0xdff5f2,transparent:true,opacity:.22,depthWrite:false})); dish.position.y=-.08; scene.add(dish);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(6.4,.07,8,96),new THREE.MeshPhongMaterial({color:0xe6fffb,transparent:true,opacity:.6})); rim.rotation.x=Math.PI/2; scene.add(rim);
+  const flies=[], labels=[], timers=[];
+  const later=(fn,ms)=>timers.push(setTimeout(fn,ms));
+  function spawn(body,wing,x,z,delay=0,sc=1){ const f=makeFly3D(body,wing); f.position.set(x,0,z); f.scale.setScalar(.001);
+    f.userData.tp=new THREE.Vector3(x,0,z); f.userData.ts=sc; f.userData.t0=performance.now()+delay; f.rotation.y=(Math.random()-.5)*.5; scene.add(f); flies.push(f); later(()=>SFX.pop(),delay); return f; }
+  function lbl(x,y,z,text,delay=0,css=''){ const o=new THREE.Object3D(); o.position.set(x,y,z); scene.add(o); const e=document.createElement('div'); e.className='lbl gam'; e.innerHTML=text; e.style.cssText=css; e.style.opacity=0; host.appendChild(e);
+    const l={o,el:e,t0:performance.now()+delay}; labels.push(l); return l; }
+  function clearLabels(){ labels.splice(0).forEach(l=>{ l.el.remove(); scene.remove(l.o); }); }
+  function kill(f){ f.userData.ts=0; f.userData.dead=true; }
+  // ruồi "bóng mờ": kiểu hình dự đoán nhưng không xuất hiện
+  function ghost(f,op=.24){ f.traverse(o=>{ if(o.material){ o.material=o.material.clone(); o.material.transparent=true; o.material.opacity=Math.min(o.material.opacity??1,op); o.material.depthWrite=false; } }); }
+  let view={hw:4.2,hh:2.4}, camT=null;
+  const shiftPx=()=>innerWidth<=900?0:Math.min(540,host.clientWidth*.46)+72;
+  function camPos(){ const w=host.clientWidth||800,h=host.clientHeight||600, wide=innerWidth>900, lw=Math.max(220,w-shiftPx()), lh=wide?h:h*.5-16;
+    const d=Math.max(view.hw/(0.4142*lw/h),view.hh/(0.4142*lh/h))*1.08; return new THREE.Vector3(0,.62*d,.79*d); }
+  function frameTo(hw,hh){ view={hw,hh}; camT={t:0,from:camera.position.clone(),to:camPos()}; }
+  function resize(){ const w=host.clientWidth,h=host.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); camera.aspect=w/h;
+    camera.setViewOffset(w,h,shiftPx()/2,innerWidth>900?0:(h*.5+16)/2,w,h); camera.updateProjectionMatrix(); }
+  const ro=new ResizeObserver(()=>{ resize(); if(camT) camT.to=camPos(); else camera.position.copy(camPos()); }); ro.observe(host); resize(); camera.position.copy(camPos()); controls.target.set(0,.4,0);
+  const v=new THREE.Vector3(), ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  let raf, last=performance.now();
+  function frame(now){
+    raf=requestAnimationFrame(frame); const dt=Math.min((now-last)/1000,.05); last=now; const ts=now/1000;
+    for(let i=flies.length-1;i>=0;i--){ const f=flies[i], u=f.userData; if(now<u.t0) continue;
+      const k=Math.min(1,dt*5); const s=f.scale.x+(u.ts-f.scale.x)*k; f.scale.setScalar(Math.max(.001,s));
+      f.position.x+=(u.tp.x-f.position.x)*Math.min(1,dt*3); f.position.z+=(u.tp.z-f.position.z)*Math.min(1,dt*3);
+      f.position.y=.04*Math.sin(ts*2+u.phase);
+      u.wings.forEach((w,j)=>{ w.rotation.x=(j?1:-1)*(u.wing==='dai'?.06*Math.sin(ts*3+u.phase):0); });
+      if(u.dead && f.scale.x<.02){ scene.remove(f); flies.splice(i,1); } }
+    if(camT){ camT.t=Math.min(1,camT.t+dt/1.2); camera.position.lerpVectors(camT.from,camT.to,ease(camT.t)); if(camT.t>=1) camT=null; }
+    controls.update(); renderer.render(scene,camera);
+    const w=host.clientWidth,h=host.clientHeight;
+    labels.forEach(l=>{ l.o.getWorldPosition(v); v.project(camera); l.el.style.left=((v.x*.5+.5)*w)+'px'; l.el.style.top=((-v.y*.5+.5)*h)+'px'; l.el.style.opacity=now>=l.t0?1:0; });
+  }
+  raf=requestAnimationFrame(frame);
+  function dispose(){ timers.forEach(clearTimeout); cancelAnimationFrame(raf); ro.disconnect(); clearLabels(); renderer.dispose(); controls.dispose(); V.style.cssText=''; }
+  return {scene,flies,spawn,lbl,clearLabels,kill,ghost,frameTo,later,dispose};
+}
+function start3D(V){
+  V.className='v3d'; V.style.cssText='position:absolute;inset:0;z-index:0;overflow:hidden;display:block';
+  V.innerHTML=`<div class="hud">Kéo để xoay · cuộn để phóng to</div>`;
+  if(typeof THREE==='undefined' || !THREE.OrbitControls){ V.insertAdjacentHTML('beforeend','<div style="position:absolute;inset:0;display:grid;place-items:center;color:#fff;padding:20px;text-align:center">Không tải được thư viện 3D (Three.js). Hãy kiểm tra kết nối mạng rồi tải lại trang.</div>'); return null; }
+  return stage3D(V);
+}
+
+// Sân khấu 3D cho bước 1: P → F1 → lai phân tích → Fa
+function flyStage(V){
+  const {flies,spawn,lbl,clearLabels,kill,frameTo,later,dispose}=stage3D(V);
+  let p1,p2;
+  return {
+    showP(){ p1=spawn('xam','dai',-2.3,0); p2=spawn('den','cut',2.3,0,250); p1.rotation.y=.25; p2.rotation.y=Math.PI-.25;
+      lbl(-2.3,1.9,0,'P: thân xám, cánh dài'); lbl(2.3,1.9,0,'P: thân đen, cánh cụt',250); lbl(0,.9,0,'×'); frameTo(4.9,2.6); },
+    crossP(done){ clearLabels(); SFX.buzz(1.3); SFX.whoosh(); p1.userData.tp.set(-1.55,0,0); p2.userData.tp.set(1.55,0,0); lbl(0,1.9,0,'Đang lai…');
+      later(()=>{ kill(p1); kill(p2); clearLabels();
+        const pts=[[-3,-1.3],[0,-1.3],[3,-1.3],[-3,1.3],[0,1.3],[3,1.3]];
+        pts.forEach(([x,z],i)=>{ const f=spawn('xam','dai',x,z,i*140,.72); f.rotation.y=(Math.random()-.5)*1.2; });
+        lbl(0,2.3,-1.3,'F1: 100% thân xám, cánh dài',900); frameTo(5.6,3.6); later(()=>{ SFX.tada(); done(); },1300); },1300); },
+    crossTest(done){ clearLabels();
+      const f1s=flies.filter(f=>!f.userData.dead); const keep=f1s[1];
+      f1s.forEach(f=>{ if(f!==keep) kill(f); }); keep.userData.tp.set(-2.3,0,0); keep.rotation.y=.25;
+      const fem=spawn('den','cut',2.3,0,300); fem.rotation.y=Math.PI-.25;
+      lbl(-2.3,1.9,0,'♂ F1: thân xám, cánh dài',300); lbl(2.3,1.9,0,'♀ thân đen, cánh cụt',500); lbl(0,.9,0,'×',500); frameTo(4.9,2.6);
+      later(()=>{ clearLabels(); SFX.buzz(1.3); SFX.whoosh(); keep.userData.tp.set(-1.55,0,0); fem.userData.tp.set(1.55,0,0); lbl(0,1.9,0,'Đang lai…'); },2000);
+      later(()=>{ kill(keep); kill(fem); clearLabels();
+        const L=[[-4.4,-1.2],[-1.8,-1.2],[-4.4,1.3],[-1.8,1.3]], R=[[1.8,-1.2],[4.4,-1.2],[1.8,1.3],[4.4,1.3]];
+        L.forEach(([x,z],i)=>{ const f=spawn('xam','dai',x,z,i*150,.7); f.rotation.y=(Math.random()-.5)*1; });
+        R.forEach(([x,z],i)=>{ const f=spawn('den','cut',x,z,i*150+75,.7); f.rotation.y=(Math.random()-.5)*1; });
+        lbl(-3.1,2.2,-1.2,'50% thân xám, cánh dài',900); lbl(3.1,2.2,-1.2,'50% thân đen, cánh cụt',900); lbl(0,.6,2.6,'Fa: tỉ lệ 1 : 1',1200);
+        frameTo(6.6,3.6); later(()=>{ SFX.tada(); done(); },1400); },3300); },
+    dispose
+  };
+}
+
+// Sân khấu 3D cho bước 2: hàng trên là dự đoán theo Mendel (4 kiểu hình), hàng dưới là thực tế của Morgan (2 kiểu hình)
+function compareStage(B){
+  const {spawn,lbl,clearLabels,kill,ghost,frameTo,later}=B;
+  const COLS=[['xam','dai',-4.5,'Xám, dài'],['xam','cut',-1.5,'Xám, cụt'],['den','dai',1.5,'Đen, dài'],['den','cut',4.5,'Đen, cụt']];
+  const ZP=-1.5, ZR=1.9, RED='background:rgba(190,40,35,.88);border-color:rgba(255,255,255,.7)';
+  let m,fe;
+  return {
+    showCross(){ m=spawn('xam','dai',-2.3,0); fe=spawn('den','cut',2.3,0,250); m.rotation.y=.25; fe.rotation.y=Math.PI-.25;
+      lbl(-2.3,1.9,0,'♂ F1: thân xám, cánh dài'); lbl(2.3,1.9,0,'♀ thân đen, cánh cụt',250); lbl(0,.9,0,'×'); lbl(0,.3,2.3,'Fa sẽ có những kiểu hình nào?',400); frameTo(4.9,2.8); },
+    showPred(){ clearLabels(); SFX.buzz(1.1); SFX.whoosh(); m.userData.tp.set(-1.55,0,0); fe.userData.tp.set(1.55,0,0);
+      later(()=>{ kill(m); kill(fe);
+        COLS.forEach(([b,w,x,name],i)=>{ const f=spawn(b,w,x,ZP,i*220,.62); f.rotation.y=(Math.random()-.5)*.6; lbl(x,1.45,ZP,`${name} · 1/4`,i*220+200); });
+        lbl(0,2.7,ZP,'Dự đoán theo Mendel: 4 kiểu hình · 1 : 1 : 1 : 1',1000); frameTo(6.3,3.4); },1000); },
+    showReal(){
+      COLS.forEach(([b,w,x],i)=>{ const ok=(b==='xam')===(w==='dai');
+        const f=spawn(b,w,x,ZR,i*200,.62); f.rotation.y=(Math.random()-.5)*.6;
+        if(ok) lbl(x,1.45,ZR,'Có · 50%',i*200+200,'background:rgba(31,122,77,.88)');
+        else { ghost(f); lbl(x,1.0,ZR,'✕ Không có',i*200+200,RED); } });
+      lbl(0,.1,ZR+1.5,'Thực tế (Morgan): chỉ 2 kiểu hình · 1 : 1',900); frameTo(6.8,4.6); later(()=>SFX.no(),900); }
+  };
 }
 
 /* ============ 1b – So sánh với Mendel ============ */
+// Luồng 3 phần: (1) dự đoán theo Mendel → (2) đối chiếu với thực tế → (3) rút ra nhận xét
 function act1b(P, V){
-  V.innerHTML = `<div class="vcard"><h4>Nhắc lại thí nghiệm của Morgan</h4>
-    <div class="cross" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${F_XD(false,'sm')}<span class="times">×</span>${F_DC(false,'sm')}<b>→ F1:</b>${F_XD(false,'sm')}</div>
-    <div class="cross" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"><b>Lai phân tích → Fa:</b>${F_XD(true,'sm')}<b>:</b>${F_DC(true,'sm')}<b>(1 : 1)</b></div></div>
-    <div class="vrow hide" id="b-reveal">
-      <div class="vcard"><h4>Theo Mendel (dự đoán)</h4><b>4 kiểu hình · 1 : 1 : 1 : 1</b>
-        <div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:6px">${F_XD(true,'sm')}${F_DC(true,'sm')}${F_XC(true,'sm')}${F_DD(true,'sm')}</div></div>
-      <div class="vcard"><h4>Thực tế (Morgan)</h4><b>2 kiểu hình · 1 : 1</b>
-        <div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:6px">${F_XD(true,'sm')}${F_DC(true,'sm')}</div></div></div>`;
+  const B=start3D(V), C=B?compareStage(B):null; C&&C.showCross();
   P.innerHTML = `
   <h2>Nếu theo quy luật của Mendel thì sao?</h2>
-  <p class="lead">Em đóng vai nhà khoa học: kéo các thẻ vào bảng so sánh.</p>
-  <div class="card" id="b-card">
-    <span class="chip">Bảng so sánh</span><span class="counter" id="b-count">Đã ghép 0/6</span>
-    <table class="cmp"><tr><th class="rl"></th><th class="a">Theo Mendel (dự đoán)</th><th class="b">Thực tế (Morgan)</th></tr>
-      <tr><th class="rl">Số loại kiểu hình</th><td class="slot" data-cell="r1a">Thả thẻ</td><td class="slot" data-cell="r1b">Thả thẻ</td></tr>
-      <tr><th class="rl">Tỉ lệ kiểu hình</th><td class="slot" data-cell="r2a">Thả thẻ</td><td class="slot" data-cell="r2b">Thả thẻ</td></tr>
-      <tr><th class="rl">Các kiểu hình xuất hiện</th><td class="slot" data-cell="r3a">Thả thẻ</td><td class="slot" data-cell="r3b">Thả thẻ</td></tr>
-    </table>
-    <div class="tray"></div>
-    <div><button class="qbtn" id="b-check" disabled>Kiểm tra</button></div>
-    <div class="fb" id="b-fb"></div>
-  </div>
-  <div class="card hide" id="b-q"></div>`;
-  say('Bây giờ em đóng vai nhà khoa học nhé. Nếu hai tính trạng này phân li độc lập (theo quy luật của Mendel) thì ruồi đực F1 sẽ cho 4 loại giao tử. Khi đó kết quả lai phân tích sẽ ra sao? Em hãy kéo các thẻ vào bảng so sánh.','mendel');
-  const cards=[
-    {id:'n4',html:'4 kiểu hình'},{id:'n2',html:'2 kiểu hình'},{id:'n3',html:'3 kiểu hình'},
-    {id:'t4',html:'1 : 1 : 1 : 1'},{id:'t2',html:'1 : 1'},
-    {id:'f4',html:`<span style="display:flex;gap:0;flex-wrap:wrap;justify-content:center">${F_XD(false,'sm')}${F_DC(false,'sm')}${F_XC(false,'sm')}${F_DD(false,'sm')}</span>`,cls:'flyc'},
-    {id:'f2',html:`<span style="display:flex;gap:0">${F_XD(false,'sm')}${F_DC(false,'sm')}</span>`,cls:'flyc'}];
-  const b=board($('#b-card'),cards,{r1a:'n4',r1b:'n2',r2a:'t4',r2b:'t2',r3a:'f4',r3b:'f2'},n=>{ $('#b-count').textContent=`Đã ghép ${n}/6`; $('#b-check').disabled=n<6; });
-  $('#b-check').onclick=()=>{
-    const fb=$('#b-fb');
-    if(b.check()){
-      b.lock(); $('#b-check').disabled=true;
-      fbShow(fb,'ok','<b>Chính xác!</b> Theo Mendel, ruồi đực F1 cho 4 loại giao tử, nên sẽ có 4 kiểu hình với tỉ lệ 1 : 1 : 1 : 1. Nhưng thực tế Morgan chỉ thu được 2 kiểu hình với tỉ lệ 1 : 1. <b>Kết quả thực tế khác dự đoán của Mendel.</b>');
-      $('#b-reveal').classList.remove('hide');
-      say('Em hãy trả lời <b>câu hỏi 3</b>: em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?','q3');
-      const q=$('#b-q'); q.classList.remove('hide');
-      quiz(q,{q:'Câu hỏi 3: Em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?',
-        opts:['Thân xám luôn đi cùng cánh dài, thân đen luôn đi cùng cánh cụt; hai cặp gene không phân li độc lập','Thân xám luôn đi cùng cánh cụt','Hai tính trạng phân li độc lập'],correct:[0],
-        ok:'Thân xám luôn di truyền cùng cánh dài, thân đen luôn di truyền cùng cánh cụt. Hai cặp gene này không phân li độc lập, mà cùng nằm trên một cặp NST tương đồng và di truyền cùng nhau.',
-        bad:'Chưa đúng rồi, em nhìn lại hai nhóm ruồi ở thế hệ Fa nhé.',hint:'hãy nhìn lại hai nhóm ruồi ở thế hệ Fa: tính trạng nào luôn đi cùng nhau?',
-        onDone:()=>unlock(2)});
-      setTimeout(()=>q.scrollIntoView({behavior:'smooth',block:'nearest'}),300);
-    } else fbShow(fb,'no','Chưa đúng rồi, em nhớ lại quy luật phân li độc lập của Mendel và kết quả thí nghiệm của Morgan nhé. Các ô sai được viền đỏ.');
-  };
+  <p class="lead">Em đóng vai nhà khoa học: dự đoán kết quả, rồi so với kết quả thật của Morgan.</p>
+  <div class="checks"><div class="check" id="bk1"><b>✓</b>1. Dự đoán</div><div class="check" id="bk2"><b>✓</b>2. Đối chiếu</div><div class="check" id="bk3"><b>✓</b>3. Nhận xét</div></div>
+  <div class="card" id="b-q1"></div>
+  <div class="card hide" id="b-q2"></div>
+  <div class="card hide" id="b-q3"></div>`;
+  say('Theo Mendel, các tính trạng di truyền <b>riêng rẽ</b>: màu thân không phụ thuộc vào độ dài cánh. Nếu đúng như vậy, khi lai phân tích ruồi F1, màu thân (xám hoặc đen) có thể kết hợp tự do với kiểu cánh (dài hoặc cụt). Em hãy dự đoán: đời Fa sẽ có mấy kiểu hình?','mendel');
+  const next=(id)=>{ const c=$(id); c.classList.remove('hide'); setTimeout(()=>c.scrollIntoView({behavior:'smooth',block:'nearest'}),300); return c; };
+  quiz($('#b-q1'),{q:'<b>Phần 1 – Dự đoán.</b> Nếu màu thân và kiểu cánh di truyền riêng rẽ (theo Mendel), đời Fa sẽ có mấy kiểu hình?',
+    opts:['2 kiểu hình','3 kiểu hình','4 kiểu hình, tỉ lệ 1 : 1 : 1 : 1'],correct:[2],
+    ok:'2 màu thân × 2 kiểu cánh = <b>4 kiểu hình</b>: xám–dài, xám–cụt, đen–dài, đen–cụt, mỗi loại chiếm 1 phần.',
+    bad:'Chưa đúng rồi. Em thử ghép từng màu thân với từng kiểu cánh xem được mấy cách nhé.',
+    hint:'thân xám có thể đi với cánh dài hoặc cánh cụt; thân đen cũng vậy. Tổng cộng là 2 × 2.',
+    onDone:()=>{
+      $('#bk1').classList.add('done'); C&&C.showPred();
+      say('Đúng vậy! Theo Mendel sẽ có <b>4 kiểu hình</b>, trong đó có hai kiểu mới là thân xám, cánh cụt và thân đen, cánh dài. Bây giờ em so sánh với kết quả thật của Morgan: kiểu hình nào <b>không xuất hiện</b>?','mendelB');
+      quiz(next('#b-q2'),{multi:true,q:'<b>Phần 2 – Đối chiếu.</b> Morgan chỉ thu được ruồi thân xám, cánh dài và ruồi thân đen, cánh cụt. Kiểu hình nào trong dự đoán <b>không xuất hiện</b>? (chọn 2)',
+        opts:['Thân xám, cánh dài','Thân xám, cánh cụt','Thân đen, cánh dài','Thân đen, cánh cụt'],correct:[1,2],
+        ok:'Hai kiểu hình mới <b>thân xám, cánh cụt</b> và <b>thân đen, cánh dài</b> không xuất hiện. Thực tế chỉ có 2 kiểu hình, tỉ lệ 1 : 1 – <b>khác với dự đoán của Mendel</b>.',
+        bad:'Chưa đúng rồi, em đọc lại kết quả của Morgan trong câu hỏi nhé: Fa chỉ có hai loại ruồi.',
+        hint:'ở Fa chỉ có thân xám, cánh dài và thân đen, cánh cụt. Hai kiểu còn lại thì sao?',
+        onDone:()=>{
+          $('#bk2').classList.add('done');
+          C&&C.showReal();
+          say('Em hãy trả lời <b>câu hỏi 3</b>: em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?','q3');
+          quiz(next('#b-q3'),{q:'<b>Phần 3 – Nhận xét (câu hỏi 3).</b> Em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?',
+            opts:['Thân xám luôn đi cùng cánh dài, thân đen luôn đi cùng cánh cụt: hai tính trạng di truyền cùng nhau','Thân xám luôn đi cùng cánh cụt','Hai tính trạng di truyền riêng rẽ, đúng như Mendel'],correct:[0],
+            ok:'Thân xám luôn di truyền cùng cánh dài, thân đen luôn di truyền cùng cánh cụt. Hai tính trạng <b>không phân li độc lập</b> mà di truyền cùng nhau. Vì sao lại như vậy? Em bấm ▶ để nhìn vào bên trong tế bào nhé.',
+            bad:'Chưa đúng rồi, em nhìn lại hai nhóm ruồi ở thế hệ Fa nhé.',hint:'hãy nhìn lại hai nhóm ruồi ở thế hệ Fa: tính trạng nào luôn đi cùng nhau?',
+            onDone:()=>{ $('#bk3').classList.add('done'); unlock(2); }});
+        }});
+    }});
+  return B?B.dispose:null;
 }
 
 /* ============ 1c – Giải thích: 3D ============ */
