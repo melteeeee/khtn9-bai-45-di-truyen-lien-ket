@@ -498,12 +498,13 @@ function board(root, cards, correct, onChange, accept){
 function quiz(host, {q, opts, multi=false, correct, ok, bad, hint, onDone}){
   let wrong=0, done=false; const chosen=new Set();
   const L='ABCDEFG';
-  host.innerHTML = `<h3>Chọn đáp án đúng</h3><p style="margin:0">${q}</p><div class="opts">${
+  host.innerHTML = `<p style="margin:0">${q}</p><div class="opts">${
     opts.map((o,i)=>`<button class="opt" data-i="${i}"><i>${L[i]}</i><span>${o}</span></button>`).join('')
   }</div>${multi?'<div><button class="qbtn q-check" disabled>Kiểm tra</button></div>':''}<div class="fb"></div>`;
   const fb = $('.fb',host);
   const show=(cls,t)=>{ fb.className='fb show '+cls; fb.innerHTML=t; };
   function finish(good){
+    good?SFX.ok():SFX.no();
     if(good){ done=true; show('ok','<b>Chính xác!</b> '+ok); $$('.opt',host).forEach(o=>o.disabled=true); onDone&&onDone(); return; }
     wrong++;
     wrong>=2 ? show('info','<b>Cô gợi ý:</b> '+hint) : show('no',bad);
@@ -528,21 +529,70 @@ function quiz(host, {q, opts, multi=false, correct, ok, bad, hint, onDone}){
 }
 const fbShow=(el,cls,html)=>{ el.className='fb show '+cls; el.innerHTML=html; };
 
-/* Thuyết minh (lời cô giáo + đọc to) */
-let speaking=false;
-function say(text){
-  const t=$('#narrTx'); if(t) t.innerHTML=text;
-  if(speaking) speak(text);
+/* Hiệu ứng âm thanh (tổng hợp bằng Web Audio, không cần file) */
+const SFX=(()=>{
+  let ac=null;
+  const ctx=()=>{ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } } if(ac.state==='suspended') ac.resume(); return ac; };
+  function tone(f0,f1,dur,type='sine',vol=.14,delay=0){ const a=ctx(); if(!a) return; const t=a.currentTime+delay, o=a.createOscillator(), g=a.createGain();
+    o.type=type; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.015); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t+dur+.03); }
+  function whoosh(dur=.7,vol=.16){ const a=ctx(); if(!a) return; const t=a.currentTime, n=a.sampleRate*dur, buf=a.createBuffer(1,n,a.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<n;i++) d[i]=Math.random()*2-1;
+    const src=a.createBufferSource(); src.buffer=buf; const bp=a.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=1.2;
+    bp.frequency.setValueAtTime(300,t); bp.frequency.exponentialRampToValueAtTime(2600,t+dur*.6); bp.frequency.exponentialRampToValueAtTime(600,t+dur);
+    const g=a.createGain(); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+dur*.4); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    src.connect(bp).connect(g).connect(a.destination); src.start(t); }
+  function buzz(dur=1.2,vol=.05){ const a=ctx(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), lfo=a.createOscillator(), lg=a.createGain(), g=a.createGain(), lp=a.createBiquadFilter();
+    o.type='sawtooth'; o.frequency.value=205; lfo.frequency.value=23; lg.gain.value=vol*.6; lp.type='lowpass'; lp.frequency.value=1400;
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.15); g.gain.setValueAtTime(vol,t+dur-.3); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    lfo.connect(lg).connect(g.gain); o.connect(lp).connect(g).connect(a.destination); o.start(t); lfo.start(t); o.stop(t+dur+.05); lfo.stop(t+dur+.05); }
+  return {
+    ok(){ tone(660,660,.13); tone(990,990,.22,'sine',.14,.11); },
+    no(){ tone(240,150,.28,'triangle',.15); },
+    pop(){ tone(420,980,.1,'sine',.11); },
+    whoosh, buzz,
+    ping(){ tone(1320,1760,.16,'sine',.07); },
+    scan(dur=2.2){ tone(380,1150,dur,'sine',.05); tone(760,2300,dur,'triangle',.02); },
+    tada(){ [523,659,784,1047].forEach((f,i)=>tone(f,f,i===3?.45:.2,'triangle',.11,i*.09)); }
+  };
+})();
+
+/* ---------- file voice thuyết minh: dán đường dẫn mp3 vào đúng khoá; để trống = không phát ----------
+   Lời đọc của từng khoá nằm trong tts/tts_phan_2_bai_45.json (khoá ghi trong dấu [ ] ở cuối tên file). */
+const AUDIO = {
+  // Bước 1: Ý nghĩa
+  meaning: 'https://assets.yoolife.com.vn/yootek/1794466821604-6565.mp3',
+  map: 'https://assets.yoolife.com.vn/yootek/1794466825679-2475.mp3',
+  mapFirst: 'https://assets.yoolife.com.vn/yootek/1794466829751-7957.mp3',
+  group: 'https://assets.yoolife.com.vn/yootek/1794466833758-3045.mp3',
+  // Bước 2: Em là nhà chọn giống
+  breed: 'https://assets.yoolife.com.vn/yootek/1794466837948-5386.mp3',
+  breedFull: 'https://assets.yoolife.com.vn/yootek/1794466841941-3447.mp3',
+  plant: 'https://assets.yoolife.com.vn/yootek/1794466850134-6936.mp3',
+  breedDone: 'https://assets.yoolife.com.vn/yootek/1794466845952-4741.mp3',
+  // Bước 3: Chỉ thị phân tử
+  marker: 'https://assets.yoolife.com.vn/yootek/1794466854039-8633.mp3',
+  scanned: 'https://assets.yoolife.com.vn/yootek/1794466866064-7464.mp3',
+  sowWrong: 'https://assets.yoolife.com.vn/yootek/1794466861965-4130.mp3',
+  sowOk: 'https://assets.yoolife.com.vn/yootek/1794466858122-7156.mp3',
+};
+let voice=null, muted=false, started=false, lastKey=null;
+function stopVoice(){ if(voice){ voice.pause(); voice=null; } }
+function playVoice(key){
+  stopVoice(); if(muted||!started||!key||!AUDIO[key]) return;
+  const a=new Audio(AUDIO[key]); voice=a;
+  a.onerror=()=>{ if(voice===a) voice=null; };
+  a.play().catch(()=>{ if(voice===a) voice=null; });
 }
-function speak(t){
-  if(!('speechSynthesis' in window)) return;
-  speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t.replace(/<[^>]+>/g,'')); u.lang='vi-VN'; u.rate=.95; speechSynthesis.speak(u);
-}
-const narrHTML = `<div class="nar"><div class="tx" id="narrTx"></div></div>`;
-$('#btnNarr').onclick=()=>{ speaking=!speaking; $('#btnNarr').setAttribute('aria-pressed',speaking); if(speaking) speak($('#narrTx').textContent); else if('speechSynthesis' in window) speechSynthesis.cancel(); };
+// phát file voice tương ứng với lời thuyết minh (nếu có); không hiện khung lời cô giáo
+function say(text,key){ lastKey=key||null; playVoice(key); }
+const narrHTML = ``;
+$('#btnNarr').setAttribute('aria-pressed','true');
+$('#btnNarr').onclick=()=>{ muted=!muted; $('#btnNarr').setAttribute('aria-pressed',!muted); if(muted) stopVoice(); else playVoice(lastKey); };
 $('#lessonToggle').onclick=()=>{ const l=$('#lesson'); l.classList.toggle('collapsed'); $('#lessonToggle').textContent=l.classList.contains('collapsed')?'▸':'▾'; };
 $('#btnFull').onclick=()=>{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); };
-$('#btnExplore').onclick=()=>{ $('#intro').classList.add('gone'); };
+$('#btnExplore').onclick=()=>{ $('#intro').classList.add('gone'); started=true; playVoice(lastKey); };
 
 /* ============ điều hướng ============ */
 const ACTS = [
@@ -562,7 +612,7 @@ function buildSteps(){
 function unlock(i){ finished.add(i-1); buildSteps(); }   // gọi khi hoàn thành hoạt động i-1
 function go(i){
   if(cleanup){cleanup(); cleanup=null;}
-  if('speechSynthesis' in window) speechSynthesis.cancel();
+  stopVoice(); lastKey=null;
   cur=i;
   $('#stage').classList.toggle('wide', !!ACTS[i].wide);
   $$('#tools .xt').forEach(e=>e.remove());
@@ -693,7 +743,7 @@ function act2a(P, V){
     <p class="muted" style="margin:4px 0 0;font-size:12.5px">Lưu ý: mọi gene trên NST này đều liên kết với nhau; hình chỉ làm nổi bật nhóm gene tốt mà nhà chọn giống quan tâm.</p>
     <div style="margin-top:4px">${GENES.filter(g=>g.good).map(g=>`<span class="chip2"><span class="gdot" style="background:${g.css}"></span> ${g.name}</span>`).join('')}</div></div>
   <div class="card hide" id="a-q"></div>`;
-  say('Di truyền liên kết đảm bảo nhóm tính trạng luôn đi cùng với nhau được di truyền bền vững. Điều này có ích gì cho con người? Em hãy chạm vào từng nhãn trên mô hình nhé, bắt đầu với nhãn <b>“Bản đồ gene”</b>.');
+  say('Di truyền liên kết đảm bảo nhóm tính trạng luôn đi cùng với nhau được di truyền bền vững. Điều này có ích gì cho con người? Em hãy chạm vào từng nhãn trên mô hình nhé, bắt đầu với nhãn <b>“Bản đồ gene”</b>.','meaning');
 
   const explored=new Set();
   let api=null;   // các hàm của cảnh 3D (nếu tải được)
@@ -704,19 +754,19 @@ function act2a(P, V){
     if(n>=2) showQ();
   }
   function ex1(){
-    if(explored.has(1)) return; explored.add(1);
+    if(explored.has(1)) return; explored.add(1); SFX.pop();
     $('#a-map').classList.remove('hide');
     api&&api.map();
-    say('Hiện nay, các nhà khoa học đã thiết lập được <b>bản đồ gene</b>, biết vị trí gene trên nhiễm sắc thể của nhiều loài. Em chạm tiếp nhãn <b>“Nhóm gene tốt trên cùng NST”</b> nhé.');
+    say('Hiện nay, các nhà khoa học đã thiết lập được <b>bản đồ gene</b>, biết vị trí gene trên nhiễm sắc thể của nhiều loài. Em chạm tiếp nhãn <b>“Nhóm gene tốt trên cùng NST”</b> nhé.','map');
     upd(); setTimeout(()=>$('#a-map').scrollIntoView({behavior:'smooth',block:'nearest'}),200);
   }
   function ex2(){
-    if(!explored.has(1)){ say('Em chạm nhãn <b>“Bản đồ gene”</b> trước nhé.'); return; }
-    if(explored.has(2)) return; explored.add(2);
+    if(!explored.has(1)){ SFX.no(); say('Em chạm nhãn <b>“Bản đồ gene”</b> trước nhé.','mapFirst'); return; }
+    if(explored.has(2)) return; explored.add(2); SFX.pop();
     $('#a-grp').classList.remove('hide');
     $$('#a-map tr[data-g]').forEach(tr=>tr.classList.toggle('hl',!!GENES[+tr.dataset.g].good));
     api&&api.group();
-    say('Con người có thể lựa chọn và chuyển những gene quy định tính trạng tốt nằm trên cùng một NST để tạo thành <b>nhóm tính trạng tốt di truyền cùng nhau</b>. Em trả lời câu hỏi bên dưới nhé.');
+    say('Con người có thể lựa chọn và chuyển những gene quy định tính trạng tốt nằm trên cùng một NST để tạo thành <b>nhóm tính trạng tốt di truyền cùng nhau</b>. Em trả lời câu hỏi bên dưới nhé.','group');
     upd();
   }
   function showQ(){
@@ -895,33 +945,33 @@ function act2b(P, V){
     <div class="badges" id="b-badges" style="justify-content:flex-start"></div></div>
   <div class="kcard hide" id="b-ex"><div class="kh"><span class="dot"></span>Ví dụ trong thực tế</div>
     <p>Trong chọn giống, người ta chuyển gene để tạo thành <b>nhóm gene liên kết</b> quy định cây trồng có sức đề kháng với <b>thuốc diệt cỏ</b>, <b>thuốc diệt côn trùng</b>, <b>tăng sản lượng</b> hoặc <b>nâng cao giá trị dinh dưỡng</b>.</p></div>`;
-  say('Hôm nay em là <b>nhà chọn giống</b>! Mục tiêu của em là tạo ra một giống cây trồng mang nhiều tính trạng tốt, như kháng sâu, kháng thuốc diệt cỏ, năng suất cao hay giàu dinh dưỡng. Em hãy chọn 3 gene tốt và kéo vào <b>cùng một nhiễm sắc thể</b> nhé.');
+  say('Hôm nay em là <b>nhà chọn giống</b>! Mục tiêu của em là tạo ra một giống cây trồng mang nhiều tính trạng tốt, như kháng sâu, kháng thuốc diệt cỏ, năng suất cao hay giàu dinh dưỡng. Em hãy chọn 3 gene tốt và kéo vào <b>cùng một nhiễm sắc thể</b> nhé.','breed');
   const view = (typeof THREE!=='undefined' && THREE.OrbitControls) ? breedView3D(V) : breedView2D(V);
   const cards=Object.entries(TRAITS).map(([id,t])=>({id,html:`<span class="gdot" style="background:${t.css}"></span>${t.name}`}));
   const fb=$('#b-fb');
-  let planted=false;
+  let planted=false, prevN=0;
   const b=board($('#b-card'),cards,{},n=>{
     view.setGenes(b.placed);
+    if(n!==prevN){ n===3&&n>prevN ? SFX.ok() : SFX.pop(); prevN=n; }
     $('#b-count').textContent=`Đã chọn ${n}/3`;
     $('#b-plant').classList.toggle('hide',n<3);
     $('#b-plant').classList.toggle('nudge',n===3);
-    if(n===3){ fbShow(fb,'ok','<b>Tuyệt vời!</b> Các gene tốt nằm trên cùng một NST sẽ di truyền cùng nhau, nên cây mới mang đủ các tính trạng em mong muốn.'); say('Đủ 3 gene tốt rồi! Em hãy bấm <b>“Trồng thử”</b> để xem giống cây của mình.'); }
+    if(n===3){ fbShow(fb,'ok','<b>Tuyệt vời!</b> Các gene tốt nằm trên cùng một NST sẽ di truyền cùng nhau, nên cây mới mang đủ các tính trạng em mong muốn.'); say('Đủ 3 gene tốt rồi! Em hãy bấm <b>“Trồng thử”</b> để xem giống cây của mình.','breedFull'); }
     else if(n>0) fbShow(fb,'ok','<b>Tốt lắm!</b> Gene này quy định tính trạng tốt. Các gene tốt nằm trên cùng một NST sẽ di truyền cùng nhau.');
   },(id)=>{
     if(planted) return false;
-    if(id==='x'){ view.reject(); fbShow(fb,'no','Gene này làm <b>hạt lép, năng suất kém</b>, không phù hợp với mục tiêu sản xuất. Em để lại nhé.'); return false; }
+    if(id==='x'){ view.reject(); SFX.no(); fbShow(fb,'no','Gene này làm <b>hạt lép, năng suất kém</b>, không phù hợp với mục tiêu sản xuất. Em để lại nhé.'); return false; }
     return true;
   });
   $('#b-plant').onclick=()=>{
-    planted=true; b.lock(); $('#b-plant').classList.add('hide');
+    planted=true; b.lock(); $('#b-plant').classList.add('hide'); SFX.whoosh();
     const chosen=['g1','g2','g3'].map(c=>b.placed[c]);
-    say('Các gene tốt trên NST được đưa vào giống mới. Em quan sát ruộng thử nghiệm nhé, cây đang lớn lên…');
+    say('Các gene tốt trên NST được đưa vào giống mới. Em quan sát ruộng thử nghiệm nhé, cây đang lớn lên…','plant');
     view.plant(chosen,()=>{
-      $('#b-again').classList.remove('hide');
+      $('#b-again').classList.remove('hide'); SFX.tada();
       $('#b-badges').innerHTML=chosen.map((id,i)=>`<span class="badge2" style="animation-delay:${i*.18}s"><span class="gdot" style="background:${TRAITS[id].css}"></span>${TRAITS[id].name}</span>`).join('');
       $('#b-res').classList.remove('hide'); $('#b-ex').classList.remove('hide');
-      const names=chosen.map(id=>TRAITS[id].say);
-      say(`Cây vừa ${names.slice(0,-1).join(', vừa ')}, vừa ${names[names.length-1]}. Ví dụ trong thực tế: chuyển gene để tạo thành nhóm gene quy định cây trồng có sức đề kháng với thuốc diệt cỏ, thuốc diệt côn trùng, tăng sản lượng hoặc nâng cao giá trị dinh dưỡng.`);
+      say('Giống mới mang đủ các tính trạng tốt mà em đã chọn. Ví dụ trong thực tế: chuyển gene để tạo thành nhóm gene quy định cây trồng có sức đề kháng với thuốc diệt cỏ, thuốc diệt côn trùng, tăng sản lượng hoặc nâng cao giá trị dinh dưỡng.','breedDone');
       setTimeout(()=>$('#b-res').scrollIntoView({behavior:'smooth',block:'nearest'}),200);
       unlock(2);
     });
@@ -1158,7 +1208,7 @@ function act2c(P, V){
     <div class="fb" id="c-fb"></div>
   </div>
   <div class="card hide" id="c-q"></div>`;
-  say('Ngoài việc chọn gene, các nhà khoa học còn có một “dụng cụ” rất đặc biệt, gọi là <b>chỉ thị phân tử</b>. Đó là những trình tự nucleotide đặc biệt liên kết với các gene liên quan, giúp nhận biết các đặc tính cần quan tâm. Em hãy giúp nhà khoa học chọn những cây lúa non kháng bệnh đạo ôn nhé. Em bấm nút <b>“Quét chỉ thị phân tử”</b>.');
+  say('Ngoài việc chọn gene, các nhà khoa học còn có một “dụng cụ” rất đặc biệt, gọi là <b>chỉ thị phân tử</b>. Đó là những trình tự nucleotide đặc biệt liên kết với các gene liên quan, giúp nhận biết các đặc tính cần quan tâm. Em hãy giúp nhà khoa học chọn những cây lúa non kháng bệnh đạo ôn nhé. Em bấm nút <b>“Quét chỉ thị phân tử”</b>.','marker');
   const fb=$('#c-fb');
   const kept=[]; let scanned=false, sown=false;
   const view = (typeof THREE!=='undefined' && THREE.OrbitControls) ? seedView3D(V,has,pick) : seedView2D(V,has,pick);
@@ -1169,9 +1219,10 @@ function act2c(P, V){
   }
   function pick(i){
     if(sown) return;
-    if(!scanned){ fbShow(fb,'info','Em bấm <b>“Quét chỉ thị phân tử”</b> trước để biết cây nào mang gene kháng bệnh nhé.'); return; }
+    if(!scanned){ SFX.no(); fbShow(fb,'info','Em bấm <b>“Quét chỉ thị phân tử”</b> trước để biết cây nào mang gene kháng bệnh nhé.'); return; }
     const k=kept.indexOf(i);
     if(k>=0) kept.splice(k,1); else kept.push(i);
+    SFX.pop();
     view.setKept(kept); status();
     if(kept.length) fbShow(fb,'info',`Khay Giữ lại đang có <b>${kept.length} cây</b>. Chạm lại vào cây để bỏ ra; chọn xong, em bấm <b>“Gieo thử”</b>.`);
     else fb.className='fb';
@@ -1179,14 +1230,14 @@ function act2c(P, V){
   status();
   $('#c-scan').onclick=()=>{
     if(scanned) return;
-    $('#c-scan').disabled=true; $('#c-scan').classList.remove('nudge'); $('#c-scan').textContent='Đang quét…';
+    $('#c-scan').disabled=true; $('#c-scan').classList.remove('nudge'); $('#c-scan').textContent='Đang quét…'; SFX.scan();
     view.scan(()=>{ scanned=true; status(); $('#c-leg').classList.remove('hide'); $('#c-scan').textContent='Đã quét';
-      say('Những cây có chỉ thị phân tử sẽ <b>sáng lên</b>, đó là những cây mang gene kháng bệnh vì chỉ thị này liên kết với gene kháng bệnh. Trong thực tế, chỉ thị phân tử không nhìn thấy bằng mắt: nhà khoa học lấy mẫu lá non, tách DNA và phân tích để tìm chỉ thị; ở đây cây sáng lên chỉ là hình minh hoạ. Em chạm vào các cây sáng để giữ lại.'); });
+      say('Những cây có chỉ thị phân tử sẽ <b>sáng lên</b>, đó là những cây mang gene kháng bệnh vì chỉ thị này liên kết với gene kháng bệnh. Trong thực tế, chỉ thị phân tử không nhìn thấy bằng mắt: nhà khoa học lấy mẫu lá non, tách DNA và phân tích để tìm chỉ thị; ở đây cây sáng lên chỉ là hình minh hoạ. Em chạm vào các cây sáng để giữ lại.','scanned'); });
   };
   const names=a=>a.map(i=>'Cây '+(i+1)).join(', ');
   $('#c-sow').onclick=()=>{
     sown=true; status();
-    view.sow(kept);   // cây mang gene kháng bệnh thì khoẻ, cây không mang thì bị đạo ôn
+    SFX.whoosh(); view.sow(kept);   // cây mang gene kháng bệnh thì khoẻ, cây không mang thì bị đạo ôn
     const wrong=kept.filter(i=>!has.includes(i)).sort((a,b)=>a-b);
     const missed=has.filter(i=>!kept.includes(i)).sort((a,b)=>a-b);
     if(wrong.length || missed.length){
@@ -1194,12 +1245,13 @@ function act2c(P, V){
       if(wrong.length) parts.push(`<b>${names(wrong)}</b> trong khay Giữ lại <b>bị bệnh đạo ôn</b> vì không có chỉ thị phân tử, tức là không mang gene kháng bệnh.`);
       if(missed.length) parts.push(`Em đã bỏ sót <b>${names(missed)}</b>: cây có chỉ thị phân tử nên mang gene kháng bệnh và vẫn khoẻ mạnh.`);
       fbShow(fb,'no','<b>Chưa đúng rồi!</b> '+parts.join(' ')+' Em bấm <b>“Chọn lại”</b> và chỉ giữ những cây sáng nhé.');
-      say('Kết quả gieo thử cho thấy: cây không có chỉ thị phân tử thì không mang gene kháng bệnh nên bị bệnh đạo ôn. Em bấm <b>“Chọn lại”</b> để chọn đúng những cây sáng nhé.');
-      $('#c-again').classList.remove('hide'); $('#c-again').classList.add('nudge');
+      say('Kết quả gieo thử cho thấy: cây không có chỉ thị phân tử thì không mang gene kháng bệnh nên bị bệnh đạo ôn. Em bấm <b>“Chọn lại”</b> để chọn đúng những cây sáng nhé.','sowWrong');
+      setTimeout(()=>SFX.no(),700); $('#c-again').classList.remove('hide'); $('#c-again').classList.add('nudge');
       return;
     }
+    setTimeout(()=>SFX.tada(),700);
     fbShow(fb,'ok','<b>Chính xác!</b> Các cây được giữ lại đều <b>khoẻ mạnh</b>; các cây không mang gene kháng bệnh xuất hiện <b>đốm bệnh đạo ôn</b> trên lá. Nhờ chỉ thị phân tử, ta nhận biết cây kháng bệnh ngay khi cây còn non, không cần chờ cây lớn.');
-    say('Các cây giữ lại khoẻ mạnh, còn các cây không mang gene kháng bệnh bị đốm bệnh đạo ôn. Em trả lời câu hỏi bên dưới nhé: vì sao có thể nhận biết cây kháng bệnh ngay từ khi còn non?');
+    say('Các cây giữ lại khoẻ mạnh, còn các cây không mang gene kháng bệnh bị đốm bệnh đạo ôn. Em trả lời câu hỏi bên dưới nhé: vì sao có thể nhận biết cây kháng bệnh ngay từ khi còn non?','sowOk');
     const q=$('#c-q'); q.classList.remove('hide');
     quiz(q,{q:'Vì sao có thể nhận biết cây kháng bệnh ngay từ khi còn non?',
       opts:['Vì chỉ thị phân tử liên kết với gene kháng bệnh nên đi cùng gene đó','Vì cây kháng bệnh có lá to hơn','Vì cây kháng bệnh luôn mọc nhanh hơn'],correct:[0],
@@ -1209,7 +1261,7 @@ function act2c(P, V){
       onDone:()=>unlock(3)});
     setTimeout(()=>q.scrollIntoView({behavior:'smooth',block:'nearest'}),300);
   };
-  $('#c-again').onclick=()=>{ c2Has=has; go(ACTS.findIndex(a=>a.id==='2c')); };
+  $('#c-again').onclick=()=>{ SFX.pop(); c2Has=has; go(ACTS.findIndex(a=>a.id==='2c')); };
   return view.cleanup;
 }
 
@@ -1372,7 +1424,7 @@ function seedView3D(V,has,onPick){
     // quét
     if(scanT>=0){
       scanT=Math.min(1,scanT+dt/2.2); const x=TX[0]-TW/2+TW*ease(scanT); gantry.position.x=x;
-      plants.forEach(p=>{ if(p.has && !p.lit && p.g.position.x<x){ p.lit=true; p.litAt=now; p.mkMat.color.setHex(0x22c55e); p.mkMat.emissive.setHex(0x0f7a36); p.el.classList.add('lit'); } });
+      plants.forEach(p=>{ if(p.has && !p.lit && p.g.position.x<x){ p.lit=true; SFX.ping(); p.litAt=now; p.mkMat.color.setHex(0x22c55e); p.mkMat.emissive.setHex(0x0f7a36); p.el.classList.add('lit'); } });
       if(scanT>=1){ scanT=-1; gantry.visible=false; const cb=scanCb; scanCb=null; cb&&cb(); }
     }
     plants.forEach((p,i)=>{

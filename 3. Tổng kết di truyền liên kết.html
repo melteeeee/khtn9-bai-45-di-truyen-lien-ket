@@ -769,7 +769,50 @@
 
     .nar .tx {
       font-size: 14.5px;
-      line-height: 1.6
+      line-height: 1.6;
+      transition: font-size .4s
+    }
+
+    /* lời chốt hiện to khi phần Ghi nhớ chưa xuất hiện */
+    .nar.big .tx {
+      font-size: 19px;
+      line-height: 1.65
+    }
+
+    .reveal {
+      animation: revealUp .5s ease both
+    }
+
+    @keyframes revealUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    /* biểu tượng của ý tiếp theo sáng lên, gợi ý em chạm vào */
+    .ico.hint {
+      background: #D7F35A;
+      border-color: #a9c52a;
+      color: #2c3d0a;
+      animation: icoHint 1.2s ease infinite
+    }
+
+    @keyframes icoHint {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(215, 243, 90, .9)
+      }
+
+      50% {
+        box-shadow: 0 0 0 9px rgba(215, 243, 90, 0)
+      }
     }
 
     /* ruồi giấm */
@@ -1969,7 +2012,7 @@
     function quiz(host, { q, opts, multi = false, correct, ok, bad, hint, onDone }) {
       let wrong = 0, done = false; const chosen = new Set();
       const L = 'ABCDEFG';
-      host.innerHTML = `<h3>Chọn đáp án đúng</h3><p style="margin:0">${q}</p><div class="opts">${opts.map((o, i) => `<button class="opt" data-i="${i}"><i>${L[i]}</i><span>${o}</span></button>`).join('')
+      host.innerHTML = `<p style="margin:0">${q}</p><div class="opts">${opts.map((o, i) => `<button class="opt" data-i="${i}"><i>${L[i]}</i><span>${o}</span></button>`).join('')
         }</div>${multi ? '<div><button class="qbtn q-check" disabled>Kiểm tra</button></div>' : ''}<div class="fb"></div>`;
       const fb = $('.fb', host);
       const show = (cls, t) => { fb.className = 'fb show ' + cls; fb.innerHTML = t; };
@@ -2024,26 +2067,34 @@
       mapNo: '',
       mapDone: 'https://assets.yoolife.com.vn/yootek/1794296393452-9907.mp3',
     };
-    let voice = null, muted = false, started = false, lastKey = null;
+    let voice = null, muted = false, started = false, lastKey = null, lastEnd = null;
     function stopVoice() { if (voice) { voice.pause(); voice = null; } }
-    function playVoice(key) {
-      stopVoice(); if (muted || !started || !key || !AUDIO[key]) return;
+    // onEnd: gọi khi đọc xong (hoặc ngay lập tức nếu không có file / đang tắt tiếng / không phát được)
+    function playVoice(key, onEnd) {
+      stopVoice();
+      let called = false; const fin = () => { if (!called && onEnd) { called = true; onEnd(); } };
+      if (!started) return;                         // chưa bấm "Bắt đầu": phát sau
+      if (muted || !key || !AUDIO[key]) return fin();
       const a = new Audio(AUDIO[key]); voice = a;
-      a.onerror = () => { if (voice === a) voice = null; };
-      a.play().catch(() => { if (voice === a) voice = null; });
+      const end = () => { if (voice === a) voice = null; fin(); };
+      a.onended = end; a.onerror = end;
+      a.play().catch(end);
     }
     const voiceBusy = () => !!voice && !voice.paused && !voice.ended;
     // hiện lời cô giáo trong khung thuyết minh và phát file voice tương ứng (nếu có)
-    function say(text, key) {
+    function say(text, key, onEnd) {
       const t = $('#narrTx'); if (t) t.innerHTML = text;
-      lastKey = key || null; playVoice(key);
+      lastKey = key || null; lastEnd = onEnd || null; playVoice(key, onEnd);
     }
     const narrHTML = `<div class="nar"><div class="tx" id="narrTx"></div></div>`;
     $('#btnNarr').setAttribute('aria-pressed', 'true');
-    $('#btnNarr').onclick = () => { muted = !muted; $('#btnNarr').setAttribute('aria-pressed', !muted); if (muted) stopVoice(); else playVoice(lastKey); };
+    $('#btnNarr').onclick = () => {
+      muted = !muted; $('#btnNarr').setAttribute('aria-pressed', !muted);
+      if (muted) { stopVoice(); lastEnd && lastEnd(); } else playVoice(lastKey);
+    };
     $('#lessonToggle').onclick = () => { const l = $('#lesson'); l.classList.toggle('collapsed'); $('#lessonToggle').textContent = l.classList.contains('collapsed') ? '▸' : '▾'; };
     $('#btnFull').onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); };
-    $('#btnExplore').onclick = () => { $('#intro').classList.add('gone'); started = true; playVoice(lastKey); };
+    $('#btnExplore').onclick = () => { $('#intro').classList.add('gone'); started = true; playVoice(lastKey, lastEnd); };
 
     /* ============ điều hướng ============ */
     const ACTS = [
@@ -2148,7 +2199,7 @@
       const lineSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); lineSvg.setAttribute('class', 'lines3d'); host.appendChild(lineSvg);
       const cap = document.createElement('div'); cap.className = 'cap3d'; host.appendChild(cap);
       const labels = [], btns = [];
-      let tween = null, raf = 0, last = performance.now(), capHtml = '', pendingVoice = null;
+      let tween = null, raf = 0, last = performance.now(), capHtml = '', pendingVoice = null, flashT = -1;
       const v = new THREE.Vector3();
       const wide = () => innerWidth > 900;
       // vùng nhìn thấy được (không bị bảng bài học và khung chú thích che), tính theo px
@@ -2192,8 +2243,18 @@
         raf = requestAnimationFrame(frame); const dt = Math.min((now - last) / 1000, .05); last = now;
         applyOffset();
         const intro = $('#intro'), waiting = intro && !intro.classList.contains('gone');   // chưa bấm "Bắt đầu" thì chưa chạy hoạt ảnh
-        if (pendingVoice && started && !waiting && !voiceBusy()) { const k = pendingVoice; pendingVoice = null; playVoice(k); }
+        if (pendingVoice && started && !waiting && !voiceBusy()) {
+          const k = pendingVoice; pendingVoice = null; playVoice(k);
+          if (k === 'nst0') flashT = 0;   // bắt đầu đọc ý đầu tiên của Ghi nhớ: mô hình nháy sáng 2 lần
+        }
+        if (flashT >= 0) {
+          flashT += dt; const t = flashT, on = t < 1.3 ? Math.sin(Math.PI * t / .65) ** 2 : 0;
+          root.traverse(n => { const m = n.material; if (m && m.emissive) m.emissive.copy(m.color).multiplyScalar(.75 * on); });
+          if (t >= 1.3) flashT = -1;
+        }
         K.update && K.update(waiting ? 0 : dt, now);
+        // hoạt ảnh đã xong và đã đọc xong lời cuối → báo cho bước học (gợi ý ý tiếp theo)
+        if (K.finished && !K.doneFired && !K.busy()) { K.doneFired = true; K.onDone && K.onDone(); }
         if (tween) { tween.t = Math.min(1, tween.t + dt / 1.2); const k = ease3(tween.t); camera.position.lerpVectors(tween.from, tween.to, k); controls.target.lerpVectors(tween.tf, tween.tt, k); if (tween.t >= 1) tween = null; }
         controls.update(); renderer.render(scene, camera);
         const w = host.clientWidth, h = host.clientHeight;
@@ -2342,7 +2403,7 @@
           if (hold > 0) hold -= dt;
           else if (!(s === Math.floor(s) && K.busy())) {   // đứng ở một giai đoạn: chờ đọc xong lời rồi mới chạy tiếp
             const nx = Math.floor(s + 1e-6) + 1; s = Math.min(nx, s + dt / SP);
-            if (s >= nx) { s = nx; if (nx >= 4) { playing = false; setBtn(); } else hold = HOLD; }
+            if (s >= nx) { s = nx; if (nx >= 4) { playing = false; K.finished = true; setBtn(); } else hold = HOLD; }
           }
           if (s > 1.9 && !wideCam) { wideCam = true; K.goHome(); }
         }
@@ -2423,7 +2484,7 @@
           if (hold > 0) hold -= dt;
           else if (!(s === Math.floor(s) && K.busy())) {   // đứng ở một giai đoạn: chờ đọc xong lời rồi mới chạy tiếp
             const nx = Math.floor(s + 1e-6) + 1; s = Math.min(nx, s + dt / SP);
-            if (s >= nx) { s = nx; if (nx >= 3) { playing = false; setBtn(); } else hold = HOLD; }
+            if (s >= nx) { s = nx; if (nx >= 3) { playing = false; K.finished = true; setBtn(); } else hold = HOLD; }
           }
         }
         place(now);
@@ -2481,7 +2542,7 @@
       let s = 0;
       K.home = () => K.view(5.95, 4.05, .2, .08);
       K.update = dt => {
-        s = Math.min(1.6, s + dt / 3);
+        s = Math.min(1.6, s + dt / 3); if (s >= 1.6) K.finished = true;
         GAM.forEach((g, i) => {
           const o = clamp01((s - .15 - (i < 2 ? i * .25 : (i - 2) * .18 + .1)) * 3);
           setOp3(g.arr, o); setOp3(g.grp, clamp01(o * 1.5 - .3)); g.lbl.op = clamp01(o * 1.5 - .5);
@@ -2502,22 +2563,37 @@
         { k: 'grp', h: 'Nhóm tính trạng liên kết và chọn giống', t: 'Các tính trạng do các gene trên một NST quy định luôn di truyền cùng nhau, tạo thành <b>nhóm tính trạng di truyền liên kết</b>. Trong chọn giống, có thể ứng dụng để chọn được những nhóm tính trạng tốt luôn di truyền cùng nhau, phù hợp mục tiêu sản xuất của con người.' },
         { k: 'cmp', h: 'So sánh với phân li độc lập', t: 'Di truyền phân li độc lập làm xuất hiện biến dị tổ hợp, tạo ra sự đa dạng cho sinh giới; còn di truyền liên kết <b>hạn chế biến dị tổ hợp</b>, đảm bảo sự di truyền bền vững của nhóm tính trạng.' },
       ];
-      P.innerHTML = `
+      P.innerHTML = `<div id="d-body" class="hide">
   <h2>Ghi nhớ</h2>
   <div class="kcard"><div class="kh"><span class="dot"></span>Em đã học</div>
     <p class="muted" style="font-size:13px;margin-bottom:4px">Chạm từng ý để xem nội dung và hình minh hoạ.</p>
     ${ITEMS.map((it, i) => `<div class="learn" data-k="${it.k}"><button class="ico" type="button" data-k="${it.k}" aria-label="Xem hình minh hoạ ý ${i + 1}">${ICONS[it.k]}</button><div class="lt"><button class="lh" type="button" data-k="${it.k}">${it.h}</button><p>${it.t}</p></div></div>`).join('')}</div>
-  <div><button class="qbtn" id="d-map">Lập sơ đồ tổng kết →</button></div>`;
-      say('<b>CHỐT LẠI</b>: di truyền liên kết là hiện tượng các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau trong quá trình giảm phân. Trong chọn giống, có thể ứng dụng để chọn được những <b>nhóm tính trạng tốt</b> luôn di truyền cùng nhau. Di truyền liên kết <b>hạn chế biến dị tổ hợp</b>, đảm bảo sự di truyền bền vững của nhóm tính trạng.', 'note');
+  <div><button class="qbtn" id="d-map">Lập sơ đồ tổng kết →</button></div></div>`;
+      // lời chốt hiện chữ to; đọc xong mới hiện phần Ghi nhớ và chữ lời chốt về cỡ thường
+      const nar = $('#sidebody .nar'); nar.classList.add('big');
+      let revealed = false;
+      const reveal = () => {
+        if (revealed || !$('#d-body')) return; revealed = true;
+        nar.classList.remove('big'); $('#d-body').classList.remove('hide'); $('#d-body').classList.add('reveal');
+      };
+      say('<b>CHỐT LẠI</b>: di truyền liên kết là hiện tượng các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau trong quá trình giảm phân. Trong chọn giống, có thể ứng dụng để chọn được những <b>nhóm tính trạng tốt</b> luôn di truyền cùng nhau. Di truyền liên kết <b>hạn chế biến dị tổ hợp</b>, đảm bảo sự di truyền bền vững của nhóm tính trạng.', 'note', reveal);
       const has3D = typeof THREE !== 'undefined' && !!THREE.OrbitControls;
       let stop3D = null, curK = null;
+      const seen = new Set();
+      // xem (và nghe) xong một ý thì làm sáng biểu tượng của ý tiếp theo chưa xem, gợi ý em chạm vào
+      function hintNext(k) {
+        const i = ITEMS.findIndex(it => it.k === k), nx = ITEMS[i + 1];
+        if (!nx || seen.has(nx.k) || curK !== k) return;
+        const b = $(`.ico[data-k="${nx.k}"]`, P); if (b) { b.classList.add('hint'); b.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+      }
       function show(k) {
         if (k === curK) return; if (curK) stopVoice(); curK = k;
         if (stop3D) { stop3D(); stop3D = null; }
         V.className = 'vis'; V.style.cssText = ''; V.innerHTML = '';
-        if (has3D) stop3D = SCENES3D[k](kit3D(V));
+        seen.add(k);
+        if (has3D) { const K = kit3D(V); K.onDone = () => hintNext(k); stop3D = SCENES3D[k](K); }
         else V.innerHTML = illus(k);   // dự phòng: hình 2D khi không tải được Three.js
-        $$('.ico', P).forEach(b => b.classList.toggle('on', b.dataset.k === k));
+        $$('.ico', P).forEach(b => { b.classList.toggle('on', b.dataset.k === k); if (b.dataset.k === k) b.classList.remove('hint'); });
         $$('.learn', P).forEach(r => r.classList.toggle('on', r.dataset.k === k));   // chỉ mở nội dung của ý đang xem
       }
       $$('.ico, .lh', P).forEach(b => b.onclick = () => show(b.dataset.k));

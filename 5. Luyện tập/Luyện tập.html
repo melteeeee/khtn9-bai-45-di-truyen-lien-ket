@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luyện tập</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#195856;--brand-dark:#0f3f3d;--brand-light:#2f827d;--brand-soft:#e6f0ee;--ink:#10302d;--muted:#5f8b89;--line:#dbe8e5;--r:16px;--r-sm:11px;--sh-1:0 1px 2px rgba(13,42,40,.05);--sh-3:0 10px 30px -12px rgba(13,42,40,.32)}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{font-family:'Roboto',system-ui,sans-serif;font-size:15px;line-height:1.5;color:var(--ink);background:#195658;overflow:hidden}
+.stage{position:absolute;inset:0;overflow-y:auto;padding:16px;display:flex}
+.card{width:100%;min-height:100%;display:flex;flex-direction:column;background:#fff;border-radius:22px;box-shadow:var(--sh-3);padding:36px 56px 40px}
+.row{margin-top:auto!important;padding-top:16px}
+.done{margin:auto 0}
+.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.chip{font-size:18px;font-weight:700;color:var(--brand);background:var(--brand-soft);border-radius:99px;padding:4px 18px}
+.chip.lv{background:#f6efe2;color:#8a6a35}
+.count{margin-left:auto;font-size:19px;font-weight:700;color:var(--muted)}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin:18px 0 24px}
+.bar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),var(--brand-light));border-radius:99px;transition:width .3s}
+.q{white-space:pre-line;font-size:clamp(26px,2.4vw,34px);font-weight:700;line-height:1.4;margin:0 0 22px;color:var(--ink)}
+.opts{display:flex;flex-direction:column;gap:14px}
+.opt{display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;padding:18px 22px;border-radius:16px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-size:24px;cursor:pointer;transition:.15s;font-family:inherit}
+.opt i{font-style:normal;flex:0 0 40px;height:40px;border-radius:50%;background:var(--brand-soft);color:var(--brand);font-weight:700;font-size:19px;display:flex;align-items:center;justify-content:center}
+.opt:hover:not(:disabled){border-color:var(--brand-light);background:#f1f9f7}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-dark);font-weight:600}.opt.ok i{background:var(--brand);color:#fff}
+.opt.no{border-color:#c96a4f;background:#fbeae4;color:#a54527}.opt.no i{background:#c96a4f;color:#fff}
+.fb{display:none;margin-top:18px;padding:16px 22px;border-radius:16px;font-size:22px;line-height:1.6}
+.fb.show{display:block}.fb.ok{background:var(--brand-soft);color:var(--brand-dark)}.fb.no{background:#fbeae4;color:#a54527}
+.row{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.btn{border:0;border-radius:99px;padding:16px 38px;font-size:22px;font-weight:700;cursor:pointer;background:var(--brand);color:#fff;font-family:inherit}
+.btn:hover{background:var(--brand-dark)}.btn[hidden]{display:none}
+.done{text-align:center;padding:10px 0}
+.done h2{margin:0 0 6px;font-size:clamp(24px,3.4vw,32px);color:var(--brand-dark)}
+.score{font-size:54px;font-weight:800;color:var(--brand);line-height:1.1;margin:8px 0}
+.done p{margin:0 0 14px;color:var(--muted);font-size:16px}
+.lvs{display:flex;flex-direction:column;gap:10px;max-width:520px;margin:18px auto 24px}
+.lvrow{display:flex;align-items:center;gap:14px;padding:12px 18px;border-radius:14px;background:#f1f9f7;border:1px solid var(--line);font-size:20px;font-weight:600;color:var(--ink);text-align:left}
+.lvrow b{margin-left:auto;font-size:24px;color:var(--brand)}
+.lvrow .mini{flex:0 0 120px;height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.lvrow .mini span{display:block;height:100%;background:var(--brand);border-radius:99px}
+@media (max-width:620px){.stage{padding:10px}.card{padding:18px 16px}.opt{font-size:18px;padding:12px 14px}.q{font-size:22px}.fb{font-size:17px}.btn{font-size:18px;padding:12px 28px}.lvrow{font-size:16px}.lvrow .mini{flex-basis:60px}}
+</style></head><body>
+<div class="stage"><div class="card" id="card"></div></div>
+
+<script>
+const Q=[{"level": "Nhận biết", "q": "Người đầu tiên phát hiện hiện tượng di truyền liên kết trên ruồi giấm là", "opts": ["Mendel", "Morgan", "Watson", "Darwin"], "ans": 1}, {"level": "Nhận biết", "q": "Di truyền liên kết là hiện tượng", "opts": ["các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau trong quá trình giảm phân", "các gene nằm trên các nhiễm sắc thể khác nhau phân li độc lập với nhau", "các gene trên một nhiễm sắc thể luôn đổi vị trí cho nhau", "các tính trạng chỉ biểu hiện ở thế hệ F2"], "ans": 0}, {"level": "Nhận biết", "q": "Trong thí nghiệm của Morgan, thế hệ F1 thu được có kiểu hình như thế nào?", "opts": ["100% thân xám, cánh dài", "100% thân đen, cánh cụt", "50% thân xám, cánh dài : 50% thân đen, cánh cụt", "100% thân xám, cánh cụt"], "ans": 0}, {"level": "Nhận biết", "q": "Khi lai phân tích ruồi đực F1 với ruồi cái thân đen, cánh cụt, thế hệ Fa có kết quả", "opts": ["1 thân xám, cánh dài : 1 thân đen, cánh cụt", "1 : 1 : 1 : 1", "3 thân xám, cánh dài : 1 thân đen, cánh cụt", "100% thân xám, cánh dài"], "ans": 0}, {"level": "Thông hiểu", "q": "Vì sao cơ thể F1 trong thí nghiệm của Morgan giảm phân chỉ hình thành hai loại giao tử?", "opts": ["Vì hai cặp gene cùng nằm trên một cặp NST tương đồng và phân li cùng nhau khi giảm phân", "Vì hai cặp gene nằm trên hai cặp NST khác nhau", "Vì F1 chỉ có một cặp gene", "Vì F1 không giảm phân bình thường"], "ans": 0}, {"level": "Thông hiểu", "q": "Nếu hai cặp gene phân li độc lập thì lai phân tích cơ thể dị hợp về hai cặp gene cho tỉ lệ kiểu hình là", "opts": ["1 : 1", "1 : 1 : 1 : 1", "3 : 1", "9 : 3 : 3 : 1"], "ans": 1}, {"level": "Thông hiểu", "q": "Khi so sánh di truyền liên kết với phân li độc lập, phát biểu nào sau đây đúng?", "opts": ["Liên kết gene hạn chế biến dị tổ hợp, còn phân li độc lập làm xuất hiện nhiều biến dị tổ hợp", "Liên kết gene làm xuất hiện nhiều biến dị tổ hợp hơn phân li độc lập", "Cả hai quy luật đều tạo nhiều biến dị tổ hợp như nhau", "Trong phân li độc lập, các cặp gene cùng nằm trên một cặp NST"], "ans": 0}, {"level": "Thông hiểu", "q": "Trong di truyền liên kết, các cặp gene quy định các tính trạng nằm ở đâu?", "opts": ["Trên cùng một cặp nhiễm sắc thể tương đồng", "Trên các cặp nhiễm sắc thể tương đồng khác nhau", "Chỉ trong tế bào chất", "Chỉ trên nhiễm sắc thể giới tính"], "ans": 0}, {"level": "Vận dụng", "q": "Cơ thể có kiểu gene BV/bv (liên kết hoàn toàn) giảm phân cho các loại giao tử nào?", "opts": ["BV và bv với tỉ lệ 1 : 1", "BV, Bv, bV, bv với tỉ lệ 1 : 1 : 1 : 1", "Chỉ có giao tử BV", "Bv và bV với tỉ lệ 1 : 1"], "ans": 0}, {"level": "Vận dụng", "q": "Ở một loài, A quy định thân cao, a thân thấp; B quả tròn, b quả bầu dục; hai cặp gene liên kết hoàn toàn. Cho cơ thể AB/ab tự thụ phấn, tỉ lệ kiểu hình ở đời con là", "opts": ["3 cao, tròn : 1 thấp, bầu dục", "1 : 1 : 1 : 1", "9 : 3 : 3 : 1", "1 : 1"], "ans": 0}, {"level": "Vận dụng", "q": "Vì sao trong chọn giống, người ta có thể ứng dụng di truyền liên kết?", "opts": ["Vì di truyền liên kết đảm bảo nhóm tính trạng tốt luôn di truyền cùng nhau", "Vì di truyền liên kết tạo ra nhiều biến dị tổ hợp nhất", "Vì di truyền liên kết làm các tính trạng tách rời nhau", "Vì di truyền liên kết làm thay đổi gene"], "ans": 0}, {"level": "Vận dụng", "q": "Muốn tạo giống cây trồng vừa kháng sâu, vừa năng suất cao và các tính trạng này di truyền bền vững cùng nhau, nên chọn các gene tương ứng", "opts": ["nằm trên cùng một nhiễm sắc thể", "nằm trên các nhiễm sắc thể khác nhau", "nằm trong tế bào chất", "nằm ngẫu nhiên ở bất kì đâu"], "ans": 0}];
+const LEVELS=['Nhận biết','Thông hiểu','Vận dụng'];
+const sfx=(()=>{let ctx=null;
+  const ac=()=>{try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();if(ctx.state==='suspended')ctx.resume();}catch(e){}return ctx};
+  const tone=(f,t0,d,type,vol)=>{const c=ac();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.value=f;
+    const s=c.currentTime+t0;g.gain.setValueAtTime(0.0001,s);g.gain.exponentialRampToValueAtTime(vol||.12,s+.015);g.gain.exponentialRampToValueAtTime(0.0001,s+d);
+    o.connect(g);g.connect(c.destination);o.start(s);o.stop(s+d+.02)};
+  return{click:()=>tone(660,0,.07,'triangle',.08),
+    ok:()=>{tone(523,0,.14,'sine',.13);tone(659,.1,.14,'sine',.13);tone(784,.2,.26,'sine',.13)},
+    no:()=>{tone(220,0,.16,'square',.07);tone(165,.13,.26,'square',.07)}}})();
+
+const $=id=>document.getElementById(id), card=$('card');
+let i=0, wrongOnce=false, firstTry=[];
+function render(){
+  if(i>=Q.length) return done();
+  const q=Q[i]; wrongOnce=false;
+  card.innerHTML=`<div class="top"><span class="chip">Luyện tập</span><span class="chip lv">${q.level}</span><span class="count">Câu ${i+1} / ${Q.length}</span></div>
+  <div class="bar"><span style="width:${i/Q.length*100}%"></span></div>
+  <p class="q"></p><div class="opts" id="opts"></div><div class="fb" id="fb"></div>
+  <div class="row"><button class="btn" id="next" hidden>${i===Q.length-1?'Xem kết quả':'Câu sau'}</button></div>`;
+  card.querySelector('.q').textContent=q.q;
+  const ord=q.opts.map((_,n)=>n);
+  for(let n=ord.length-1;n>0;n--){const r=Math.floor(Math.random()*(n+1));[ord[n],ord[r]]=[ord[r],ord[n]]}
+  ord.forEach((k,pos)=>{
+    const b=document.createElement('button'); b.type='button'; b.className='opt';
+    b.innerHTML=`<i>${'ABCD'[pos]}</i><span></span>`; b.lastChild.textContent=q.opts[k];
+    b.onclick=()=>pick(k,b); $('opts').appendChild(b);
+  });
+  $('next').onclick=()=>{sfx.click();i++;render()};
+  $('card').parentNode.scrollTop=0;
+}
+function pick(k,btn){
+  const q=Q[i], fb=$('fb');
+  if(k===q.ans){
+    btn.classList.add('ok'); [...$('opts').children].forEach(b=>b.disabled=true);
+    if(!wrongOnce) firstTry[i]=true;
+    fb.className='fb show ok'; fb.innerHTML='<b>Chính xác!</b>'; sfx.ok();
+    $('next').hidden=false;
+  }else{
+    wrongOnce=true; btn.classList.add('no'); btn.disabled=true;
+    fb.className='fb show no'; fb.textContent='Chưa đúng rồi. Em suy nghĩ và chọn lại nhé!'; sfx.no();
+  }
+}
+function done(){
+  const total=firstTry.filter(Boolean).length;
+  const rows=LEVELS.map(l=>{const idx=Q.map((q,n)=>q.level===l?n:-1).filter(n=>n>=0);const ok=idx.filter(n=>firstTry[n]).length;
+    return `<div class="lvrow"><span>${l}</span><span class="mini"><span style="width:${ok/idx.length*100}%"></span></span><b>${ok} / ${idx.length}</b></div>`}).join('');
+  card.innerHTML=`<div class="done"><h2>Hoàn thành luyện tập! 🎉</h2><div class="score">${total} / ${Q.length}</div>
+  <p>Số câu em trả lời đúng ngay từ lần chọn đầu tiên.</p><div class="lvs">${rows}</div><button class="btn" id="again">Làm lại</button></div>`;
+  $('again').onclick=()=>{sfx.click();i=0;firstTry=[];render()};
+}
+render();
+</script></body></html>

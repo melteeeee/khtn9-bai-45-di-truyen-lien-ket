@@ -153,8 +153,9 @@ table.cmp td.slot{width:36.5%;display:table-cell;vertical-align:middle;text-alig
 table.cmp td.slot .dc{display:flex;width:100%}
 /* bước cần khung bài học rộng (nửa màn hình) */
 @media (min-width:901px){
-  .stage.wide .lesson{width:50%}
-  .stage.wide .vis{right:calc(50% + 72px)}
+  /* hai khung rộng bằng nhau: lề trái 62px, lề phải 60px, khe giữa 12px */
+  .stage.wide .lesson{width:calc(50% - 67px)}
+  .stage.wide .vis{right:calc(50% + 5px)}
 }
 
 /* sơ đồ thí nghiệm */
@@ -247,7 +248,7 @@ ol.s3{padding-left:20px;margin:8px 0;font-size:14.5px}
 .badge2{display:inline-flex;align-items:center;background:#eef7e9;border:1.5px solid var(--ok);color:#3f6b32;border-radius:99px;padding:4px 12px;font-weight:700;font-size:13px;animation:pop .4s both}
 @keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
 /* kiểu gene dạng phân số: Ab trên aB */
-.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.12;font-weight:700;margin:0 3px;white-space:nowrap}
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.12;font-weight:700;margin:0 3px;white-space:nowrap;text-transform:none;letter-spacing:0}   /* giữ đúng chữ hoa/thường của allele, kể cả trong tiêu đề viết hoa */
 .frac span{padding:0 5px}
 .frac span:first-child{border-bottom:1.8px solid currentColor;padding-bottom:1px}
 .frac.sm{font-size:12.5px}
@@ -300,6 +301,25 @@ ol.s3{padding-left:20px;margin:8px 0;font-size:14.5px}
 .tgrid>div{text-align:center;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:6px 4px 7px;background:#fff;font-size:12.5px;font-weight:600;line-height:1.3}
 .tgrid svg{width:100%;max-width:76px;height:auto;display:block;margin:0 auto 2px}
 @media (max-width:560px){.tgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* các bước giải */
+.wst{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.wst span{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px 3px 4px;border-radius:99px;border:1.5px solid var(--line);background:#fff;color:var(--muted)}
+.wst b{width:18px;height:18px;border-radius:50%;background:var(--brand-soft);color:var(--brand-dark);display:grid;place-items:center;font-size:11px}
+.wst span.cur{border-color:var(--brand);color:var(--brand-dark)}.wst span.cur b{background:var(--brand);color:#fff}
+.wst span.done{border-color:var(--ok);color:#3f6b32}.wst span.done b{background:var(--ok);color:#fff}
+.gp{margin-top:10px}.gl{font-size:14px;font-weight:600;display:flex;align-items:center;gap:4px}
+.seg button.good{background:var(--ok);border-color:var(--ok);color:#fff}
+.seg button.bad{background:#fbeae4;border-color:var(--bad);color:#a54527}
+.seg.sm{margin-top:0;gap:4px;flex-wrap:nowrap}.seg.sm button{padding:4px 0;width:32px;font-size:13px}
+.subh{font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 2px;text-transform:uppercase;letter-spacing:.05em}
+.cnt{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 8px;border:1.5px solid var(--line);border-radius:var(--r-sm);background:#fff;margin-top:6px}
+.cnt.good{border-color:var(--ok);background:#eef7e9}.cnt.bad{border-color:var(--bad);background:#fbeae4}
+.cnt .nm{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;min-width:0}
+.cnt svg{width:24px;height:32px;flex:0 0 auto}
+.ph{color:#a08c63;font-weight:700}
+.pun td.slot{display:table-cell;height:52px;vertical-align:middle;background:#fffaef;padding:4px 8px}
+.pun td.slot.filled{background:#fff}.pun td.slot.good{background:#eef7e9}.pun td.slot.bad{background:#fbeae4}.pun td.slot.hover{background:var(--brand-soft)}
+.tray .dc{padding:6px 12px}
 </style>
 </head>
 <body>
@@ -358,7 +378,19 @@ const fbShow=(el,cls,html)=>{ el.className='fb show '+cls; el.innerHTML=html; };
 /* ---------- file voice thuyết minh: dán đường dẫn mp3 vào đúng khoá; để trống = không phát ----------
    Lời đọc của từng khoá nằm trong tts/tts_van_dung_bai_45.json (khoá ghi trong dấu [ ] ở cuối tên file). */
 const AUDIO = {
-  tomato: '', tomatoA: '', tomatoB: '', tomatoC: '', tomatoD: '', tomatoHint: '',
+  tomato:          'https://assets.yoolife.com.vn/yootek/1794370561523-7845.mp3',
+  tomatoGam:       'https://assets.yoolife.com.vn/yootek/1794370565958-5598.mp3',
+  tomatoGamHint:   'https://assets.yoolife.com.vn/yootek/1794370569989-6054.mp3',
+  tomatoPun:       'https://assets.yoolife.com.vn/yootek/1794370574771-7311.mp3',
+  tomatoPunHint:   'https://assets.yoolife.com.vn/yootek/1794370578657-1551.mp3',
+  tomatoCount:     'https://assets.yoolife.com.vn/yootek/1794370582651-7094.mp3',
+  tomatoCountHint: 'https://assets.yoolife.com.vn/yootek/1794370586618-2928.mp3',
+  tomatoCmp:       'https://assets.yoolife.com.vn/yootek/1794370590448-6990.mp3',
+  tomatoCmpHint:   'https://assets.yoolife.com.vn/yootek/1794370594436-8184.mp3',
+  tomatoA:         'https://assets.yoolife.com.vn/yootek/1794370598358-7371.mp3',
+  tomatoB:         'https://assets.yoolife.com.vn/yootek/1794370602297-1339.mp3',
+  tomatoC:         'https://assets.yoolife.com.vn/yootek/1794370606302-5045.mp3',
+  tomatoD:         'https://assets.yoolife.com.vn/yootek/1794370610262-6896.mp3',
 };
 let voice=null, muted=false, started=false, lastKey=null;
 function stopVoice(){ if(voice){ voice.pause(); voice=null; } }
@@ -381,7 +413,7 @@ $('#btnExplore').onclick=()=>{ $('#intro').classList.add('gone'); started=true; 
 
 /* ============ điều hướng ============ */
 const ACTS = [
-  {id:'3a', name:'Bài tập cà chua', fn:act3a},
+  {id:'3a', name:'Bài tập cà chua', fn:act3a, wide:true},
 ];
 let cur=0, unlocked=ACTS.length-1, cleanup=null;   // không khoá bước: học sinh đi tự do giữa các bước
 const finished=new Set();
@@ -456,84 +488,261 @@ function tomatoSVG(tall,round){
 }
 const PH4 = [[true,true],[true,false],[false,true],[false,false]];
 
+const GAMS = ['AB','Ab','aB','ab'];
+const ALLG = [...new Set(GAMS.flatMap(a=>GAMS.map(b=>canon(a,b))))];   // 10 kiểu gene có thể có
+const PHENOS = PH4.map(([t,r])=>({tall:t,round:r,key:phenoName({tall:t,round:r})}));
+
+// kéo thả + chạm chọn rồi chạm ô: thẻ .dc trong .tray, ô đích .slot
+function makeDnd(root, onChange){
+  const tray=$('.tray',root); let selCard=null, drag=null, justDragged=false;
+  const empty=s=>{ s.innerHTML='<span class="ph">?</span>'; s.classList.remove('filled','bad','good'); };
+  const clearSel=()=>{ if(selCard) selCard.classList.remove('sel'); selCard=null; };
+  const toTray=c=>{ const s=c.closest('.slot'); tray.appendChild(c); if(s) empty(s); };
+  function place(c,s){
+    if(c.parentElement===s) return;
+    const old=s.querySelector('.dc'), from=c.closest('.slot');
+    if(old){ if(from){ from.innerHTML=''; from.appendChild(old); from.classList.remove('bad','good'); } else tray.appendChild(old); }
+    else if(from) empty(from);
+    s.innerHTML=''; s.appendChild(c); s.classList.add('filled'); s.classList.remove('bad','good');
+  }
+  root.addEventListener('click',e=>{
+    if(justDragged){ justDragged=false; return; }
+    const c=e.target.closest('.dc'), s=e.target.closest('.slot');
+    if(c && !c.closest('.slot')){ const was=selCard===c; clearSel(); if(!was){ selCard=c; c.classList.add('sel'); } return; }
+    if(s){ if(selCard){ place(selCard,s); clearSel(); } else if(c) toTray(c); onChange(); }
+  });
+  root.addEventListener('pointerdown',e=>{
+    const c=e.target.closest('.dc'); if(!c||e.button>0) return;
+    drag={c,x:e.clientX,y:e.clientY,g:null,over:null};
+    const mv=ev=>{
+      if(!drag) return;
+      if(!drag.g){
+        if(Math.hypot(ev.clientX-drag.x,ev.clientY-drag.y)<6) return;
+        const r=c.getBoundingClientRect(), g=c.cloneNode(true);
+        g.classList.remove('sel'); g.classList.add('ghostc'); g.style.width=r.width+'px'; g.style.height=r.height+'px';
+        document.body.appendChild(g); drag.g=g; drag.dx=drag.x-r.left; drag.dy=drag.y-r.top; c.classList.add('dragging'); clearSel();
+      }
+      drag.g.style.left=(ev.clientX-drag.dx)+'px'; drag.g.style.top=(ev.clientY-drag.dy)+'px';
+      const el=document.elementFromPoint(ev.clientX,ev.clientY), s=el&&el.closest('.slot');
+      const ns=s&&root.contains(s)?s:null;
+      if(drag.over!==ns){ drag.over&&drag.over.classList.remove('hover'); drag.over=ns; ns&&ns.classList.add('hover'); }
+      ev.preventDefault();
+    };
+    const up=ev=>{
+      window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); window.removeEventListener('pointercancel',up);
+      if(drag&&drag.g){
+        drag.g.remove(); c.classList.remove('dragging'); justDragged=true; setTimeout(()=>justDragged=false,60);
+        const s=drag.over; if(s){ s.classList.remove('hover'); place(c,s); }
+        else { const el=document.elementFromPoint(ev.clientX,ev.clientY); if(el&&el.closest('.tray')===tray&&c.closest('.slot')) toTray(c); }
+        onChange();
+      }
+      drag=null;
+    };
+    window.addEventListener('pointermove',mv,{passive:false}); window.addEventListener('pointerup',up); window.addEventListener('pointercancel',up);
+  });
+}
+
 function act3a(P, V){
   P.innerHTML = `
   <h2>Bài tập cà chua</h2>
   <div class="card">
-    <span class="chip">Đề bài</span><span class="counter" id="x-cnt">Đã thử 0/4 phép lai</span>
+    <span class="chip">Đề bài</span><span class="counter" id="x-cnt">Đã giải 0/4 phép lai</span>
     <p style="margin:6px 0 0;font-size:14.5px">Một giống cà chua có allele <b>A</b> quy định thân cao, <b>a</b> quy định thân thấp, <b>B</b> quy định quả tròn, <b>b</b> quy định quả bầu dục; các allele trội là <b>trội hoàn toàn</b>, các gene <b>liên kết hoàn toàn</b>. Phép lai nào dưới đây cho <b>tỉ lệ kiểu gene và tỉ lệ kiểu hình giống nhau</b>?</p>
     <div class="opts g2" id="x-opts">${Object.keys(CROSSES).map(k=>`
       <button class="opt xopt" type="button" data-k="${k}" aria-label="Phép lai ${k}"><i>${k}</i><span class="xr">${frac(crossName(k)[0])}<span class="x">×</span>${frac(crossName(k)[1])}</span><span class="mark"></span></button>`).join('')}</div>
-    <div><button class="qbtn" id="x-run" type="button" disabled>Chạy phép lai</button></div>
+    <div><button class="qbtn" id="x-run" type="button" disabled>Giải phép lai này</button><button class="qbtn alt hide" id="x-quick" type="button" disabled>Xem nhanh kết quả</button></div>
+  </div>
+  <div class="card hide" id="x-work">
+    <div class="wst" id="x-wst">${['Giao tử','Bảng Punnett','Đếm tỉ lệ','So sánh'].map((s,i)=>`<span data-i="${i}"><b>${i+1}</b>${s}</span>`).join('')}</div>
+    <div id="x-step"></div>
     <div class="fb" id="x-fb"></div>
   </div>
   <div class="card hide" id="x-done">
     <span class="chip">Hoàn thành</span>
     <div class="badges"><span class="badge2">✓ Viết giao tử</span><span class="badge2">✓ Lập bảng Punnett</span><span class="badge2">✓ So sánh tỉ lệ</span></div>
-    <p style="margin:8px 0 0;font-size:14px">Em có thể chọn thêm các phép lai còn lại, bấm <b>Chạy phép lai</b> để so sánh. Em đã hoàn thành phần Vận dụng!</p>
+    <p style="margin:8px 0 0;font-size:14px">Em có thể chọn các phép lai còn lại để so sánh thêm. Em đã hoàn thành phần Vận dụng!</p>
   </div>`;
-  say('Một giống cà chua có allele A quy định thân cao, a quy định thân thấp, B quy định quả tròn, b quy định quả bầu dục; các allele trội là trội hoàn toàn, các gene liên kết hoàn toàn. Phép lai nào dưới đây cho tỉ lệ kiểu gene và tỉ lệ kiểu hình giống nhau? Em hãy chọn một phép lai rồi bấm <b>“Chạy phép lai”</b> để xem kết quả nhé.','tomato');
+  say('Một giống cà chua có allele A quy định thân cao, a quy định thân thấp, B quy định quả tròn, b quy định quả bầu dục; các allele trội là trội hoàn toàn, các gene liên kết hoàn toàn. Phép lai nào dưới đây cho tỉ lệ kiểu gene và tỉ lệ kiểu hình giống nhau? Em hãy chọn một phép lai rồi bấm <b>“Giải phép lai này”</b> để cùng giải từng bước nhé.','tomato');
 
-  // màn hình chờ: giải thích quy ước và 4 kiểu hình
   V.innerHTML = `<div class="vcard"><h4>Giống cà chua</h4>
       <p class="rule"><b>A</b>: thân cao · <b>a</b>: thân thấp<br><b>B</b>: quả tròn · <b>b</b>: quả bầu dục (A, B trội hoàn toàn)<br>Hai gene cùng nằm trên một cặp nhiễm sắc thể tương đồng và <b>liên kết hoàn toàn</b>, nên mỗi cơ thể dị hợp chỉ cho <b>2 loại giao tử</b>, mỗi loại chính là 1 nhiễm sắc thể trong cặp.</p>
       <div class="tgrid">${PH4.map(([t,r])=>`<div>${tomatoSVG(t,r)}${phenoName({tall:t,round:r})}</div>`).join('')}</div></div>
-    <div class="vcard" id="x-res"><h4>Kết quả phép lai</h4><p class="muted" style="margin:0;font-size:14px">Chọn một phép lai ở bảng Bài học rồi bấm <b>Chạy phép lai</b>.</p></div>`;
+    <div class="vcard" id="x-res"><h4>Kết quả phép lai</h4><p class="muted" style="margin:0;font-size:14px">Chọn một phép lai ở bảng Bài học rồi bấm <b>Giải phép lai này</b>.</p></div>`;
 
-  let sel=null, wrong=0, done=false; const tried=new Set();
-  const fb=$('#x-fb'), run=$('#x-run');
+  let sel=null, key=null, r=null, stage=0, wrong=0, done=false, practiced=false;
+  const solved=new Set();
+  const fb=$('#x-fb'), run=$('#x-run'), quick=$('#x-quick'), stepEl=$('#x-step');
+  const nameP = i => crossName(key)[i];
+
   $$('#x-opts .xopt').forEach(b=>b.addEventListener('click',()=>{
-    sel=b.dataset.k; $$('#x-opts .xopt').forEach(o=>o.classList.toggle('cur',o===b)); run.disabled=false; run.classList.add('nudge');
+    sel=b.dataset.k; $$('#x-opts .xopt').forEach(o=>o.classList.toggle('cur',o===b));
+    run.disabled=false; run.classList.add('nudge'); quick.disabled=false;
   }));
+  run.onclick=()=>{ if(sel){ run.classList.remove('nudge'); start(sel,false); } };
+  quick.onclick=()=>{ if(sel){ run.classList.remove('nudge'); start(sel,true); } };
 
-  function render(key,r){
+  /* ---- khung kết quả bên trái: hiện dần theo từng bước ---- */
+  function renderRes(st, scroll){
     const [n1,n2]=crossName(key);
     const bar=(arr,cls,label)=>`<div class="cb ${cls}">${arr.map(o=>`<div style="flex:${o.n} 1 0">${label(o)}</div>`).join('')}</div>`;
-    $('#x-res').innerHTML = `<h4>Phép lai ${key}: ${frac(n1,'sm')} × ${frac(n2,'sm')}</h4>
-      <div class="gam"><span class="muted">Cơ thể 1 cho giao tử</span>${r.g1.map(g=>`<span class="g">${g}</span>`).join('')}<span class="muted">· mỗi loại 1/2</span></div>
-      <div class="gam"><span class="muted">Cơ thể 2 cho giao tử</span>${r.g2.map(g=>`<span class="g">${g}</span>`).join('')}<span class="muted">· mỗi loại 1/2</span></div>
-      <table class="pun"><tr><th class="corner"></th>${r.g2.map(g=>`<th>${g}</th>`).join('')}</tr>
-        ${r.g1.map((g,i)=>`<tr><th>${g}</th>${r.cells[i].map(c=>`<td>${frac(c,'sm')}</td>`).join('')}</tr>`).join('')}</table>
-      <div class="cmpbox ${r.same?'same':''}">
-        <div class="cl"><span>Tỉ lệ kiểu gene</span><b>${ratio(r.geno)}</b></div>
-        ${bar(r.geno,'g',o=>frac(o.key,'sm'))}
-        <div class="cl"><span>Tỉ lệ kiểu hình</span><b>${ratio(r.pheno)}</b></div>
-        ${bar(r.pheno,'p',o=>o.key)}
+    let h=`<h4>Phép lai ${key}: ${frac(n1,'sm')} × ${frac(n2,'sm')}</h4>`;
+    if(st<1) h+=`<p class="muted" style="margin:0;font-size:14px">Em hãy viết giao tử của từng cơ thể ở bảng Bài học.</p>`;
+    else {
+      h+=`<div class="gam"><span class="muted">Cơ thể 1 cho giao tử</span>${r.g1.map(g=>`<span class="g">${g}</span>`).join('')}<span class="muted">· mỗi loại 1/2</span></div>
+        <div class="gam"><span class="muted">Cơ thể 2 cho giao tử</span>${r.g2.map(g=>`<span class="g">${g}</span>`).join('')}<span class="muted">· mỗi loại 1/2</span></div>
+        <table class="pun"><tr><th class="corner"></th>${r.g2.map(g=>`<th>${g}</th>`).join('')}</tr>
+        ${r.g1.map((g,i)=>`<tr><th>${g}</th>${r.cells[i].map(c=>`<td>${st>=2?frac(c,'sm'):'<span class="ph">?</span>'}</td>`).join('')}</tr>`).join('')}</table>`;
+    }
+    if(st>=3) h+=`<div class="cmpbox ${st>=4&&r.same?'same':''}">
+        <div class="cl"><span>Tỉ lệ kiểu gene</span><b>${ratio(r.geno)}</b></div>${bar(r.geno,'g',o=>frac(o.key,'sm'))}
+        <div class="cl"><span>Tỉ lệ kiểu hình</span><b>${ratio(r.pheno)}</b></div>${bar(r.pheno,'p',o=>o.key)}
       </div>
-      <div class="phl">${r.pheno.map(o=>`<div>${tomatoSVG(o.tall,o.round)}<span>${o.key}: <b>${o.n}</b></span></div>`).join('')}</div>
-      <div class="verdict ${r.same?'same':'diff'}">${r.same?'Hai thanh trùng nhau: tỉ lệ kiểu gene và tỉ lệ kiểu hình giống nhau.':'Hai thanh khác nhau: tỉ lệ kiểu gene và tỉ lệ kiểu hình chưa giống nhau.'}</div>`;
-    V.scrollTo({top:Math.max(0,$('#x-res').offsetTop-6),behavior:'smooth'});   // đưa kết quả lên đầu vùng hình
+      <div class="phl">${r.pheno.map(o=>`<div>${tomatoSVG(o.tall,o.round)}<span>${o.key}: <b>${o.n}</b></span></div>`).join('')}</div>`;
+    if(st>=4) h+=`<div class="verdict ${r.same?'same':'diff'}">${r.same?'Hai thanh trùng nhau: tỉ lệ kiểu gene và tỉ lệ kiểu hình giống nhau.':'Hai thanh khác nhau: tỉ lệ kiểu gene và tỉ lệ kiểu hình chưa giống nhau.'}</div>`;
+    $('#x-res').innerHTML=h;
+    if(scroll) V.scrollTo({top:Math.max(0,$('#x-res').offsetTop-6),behavior:'smooth'});
   }
 
-  run.onclick=()=>{
-    if(!sel) return;
-    run.classList.remove('nudge');
-    const key=sel, r=compute(key), good=r.same;
-    tried.add(key); $('#x-cnt').textContent=`Đã thử ${tried.size}/4 phép lai`;
-    render(key,r);
+  function start(k,isQuick){
+    key=k; r=compute(k); $('#x-work').classList.remove('hide');
+    $$('#x-opts .xopt').forEach(o=>{ if(o.dataset.k===k){ o.classList.remove('ok','no'); $('.mark',o).textContent=''; } });
+    if(isQuick){
+      $$('#x-wst span').forEach(s=>{ s.className='done'; });
+      stepEl.innerHTML=`<h3>Phép lai ${k}: ${frac(nameP(0),'sm')} × ${frac(nameP(1),'sm')}</h3><p class="rule">Kết quả từng bước đã hiện ở khung <b>Kết quả phép lai</b>.</p>`;
+      finish(true);
+    } else setStage(0);
+  }
+
+  function setStage(i){
+    stage=i; wrong=0; fb.className='fb';
+    $$('#x-wst span').forEach((s,j)=>{ s.className=j<i?'done':j===i?'cur':''; });
+    renderRes(i, i===0||i===3);
+    [stepGam,stepPun,stepCount,stepCmp][i]();
+    $('#sidebody').scrollTo({top:$('#x-work').offsetTop-8,behavior:'smooth'});
+  }
+
+  // sai: báo lỗi + gợi ý; sai từ lần 2 hiện nút "Điền giúp em"
+  function miss(msg, hint, hkey){
+    wrong++;
+    fbShow(fb,'no',`${msg}<br><b>Gợi ý:</b> ${hint}`);
+    say(`<b>Gợi ý:</b> ${hint}`, hkey);
+    const w=$('#x-work'); w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake');
+    if(wrong>=2) $('#s-help').classList.remove('hide');
+  }
+  const btns = () => `<div><button class="qbtn" id="s-check" type="button">Kiểm tra</button><button class="qbtn alt hide" id="s-help" type="button">Điền giúp em</button></div>`;
+
+  /* Bước 1 – viết giao tử: chọn đúng 2 giao tử cho mỗi cơ thể */
+  function stepGam(){
+    stepEl.innerHTML=`<h3>Bước 1. Viết giao tử</h3>
+      <p class="rule">Chạm để chọn <b>các loại giao tử</b> mà mỗi cơ thể tạo ra.</p>
+      ${[0,1].map(p=>`<div class="gp"><div class="gl">Cơ thể ${p+1}: ${frac(nameP(p))}</div>
+        <div class="seg" data-p="${p}">${GAMS.map(g=>`<button type="button" data-g="${g}">${g}</button>`).join('')}</div></div>`).join('')}
+      ${btns()}`;
+    say('<b>Bước 1:</b> em hãy chọn các loại giao tử mà mỗi cơ thể tạo ra. Nhớ rằng các gene liên kết hoàn toàn nhé.','tomatoGam');
+    $$('.seg button',stepEl).forEach(b=>b.onclick=()=>{ b.classList.toggle('on'); b.classList.remove('good','bad'); fb.className='fb'; });
+    const want=p=>(p?r.g2:r.g1);
+    $('#s-check').onclick=()=>{
+      let ok=true;
+      [0,1].forEach(p=>$$(`.seg[data-p="${p}"] button`,stepEl).forEach(b=>{
+        const need=want(p).includes(b.dataset.g), on=b.classList.contains('on');
+        b.classList.remove('good','bad');
+        if(on) b.classList.add(need?'good':'bad');
+        if(need!==on) ok=false;
+      }));
+      if(ok){ setStage(1); return; }
+      miss('Giao tử của ít nhất một cơ thể chưa đúng.',
+        'các gene liên kết hoàn toàn, nên mỗi giao tử mang nguyên một nhiễm sắc thể của cặp: chính là phần trên gạch hoặc phần dưới gạch của kiểu gene.','tomatoGamHint');
+    };
+    $('#s-help').onclick=()=>{ [0,1].forEach(p=>$$(`.seg[data-p="${p}"] button`,stepEl).forEach(b=>b.classList.toggle('on',want(p).includes(b.dataset.g)))); $('#s-check').click(); };
+  }
+
+  /* Bước 2 – bảng Punnett: kéo kiểu gene vào từng ô */
+  function stepPun(){
+    const right=r.cells.flat();
+    const extra=shuffle(ALLG.filter(g=>!right.includes(g))).slice(0,2);
+    stepEl.innerHTML=`<h3>Bước 2. Lập bảng Punnett</h3>
+      <p class="rule">Kéo thẻ kiểu gene vào từng ô (hoặc chạm thẻ rồi chạm ô). Mỗi ô là giao tử ở <b>hàng</b> kết hợp với giao tử ở <b>cột</b>.</p>
+      <div id="s-dnd"><table class="pun"><tr><th class="corner"></th>${r.g2.map(g=>`<th>${g}</th>`).join('')}</tr>
+        ${r.g1.map((g,i)=>`<tr><th>${g}</th>${r.g2.map((_,j)=>`<td class="slot" data-i="${i}" data-j="${j}"><span class="ph">?</span></td>`).join('')}</tr>`).join('')}</table>
+        <div class="tray">${shuffle([...right,...extra]).map(g=>`<div class="dc" data-v="${g}">${frac(g,'sm')}</div>`).join('')}</div></div>
+      ${btns()}`;
+    say('<b>Bước 2:</b> em hãy kéo kiểu gene thích hợp vào từng ô của bảng Punnett.','tomatoPun');
+    const chk=$('#s-check'), slots=$$('.slot',stepEl);
+    const upd=()=>{ chk.disabled=slots.some(s=>!s.querySelector('.dc')); fb.className='fb'; };
+    makeDnd($('#s-dnd'),upd); upd();
+    chk.onclick=()=>{
+      let ok=true;
+      slots.forEach(s=>{ const c=s.querySelector('.dc'), g=r.cells[s.dataset.i][s.dataset.j]===(c&&c.dataset.v); s.classList.remove('good','bad'); s.classList.add(g?'good':'bad'); if(!g) ok=false; });
+      if(ok){ setTimeout(()=>setStage(2),500); return; }
+      miss('Các ô tô đỏ chưa đúng.',
+        'con nhận một nhiễm sắc thể từ cơ thể 1 (giao tử ở hàng) và một nhiễm sắc thể từ cơ thể 2 (giao tử ở cột).','tomatoPunHint');
+    };
+    $('#s-help').onclick=()=>{
+      slots.forEach(s=>{ const s2=s.querySelector('.dc'); if(s2) $('.tray',stepEl).appendChild(s2); });
+      slots.forEach(s=>{ const v=r.cells[s.dataset.i][s.dataset.j], c=$$('.tray .dc',stepEl).find(d=>d.dataset.v===v); s.innerHTML=''; s.appendChild(c); s.classList.add('filled'); });
+      upd(); chk.click();
+    };
+  }
+
+  /* Bước 3 – đếm số ô của mỗi kiểu gene, mỗi kiểu hình */
+  function stepCount(){
+    const nums=(arr,t,k)=>`<div class="seg sm" data-t="${t}" data-k="${k}">${arr.map(n=>`<button type="button" data-n="${n}">${n}</button>`).join('')}</div>`;
+    stepEl.innerHTML=`<h3>Bước 3. Đếm tỉ lệ</h3>
+      <p class="rule">Đếm trong bảng Punnett: mỗi kiểu gene, mỗi kiểu hình chiếm <b>mấy ô</b>?</p>
+      <table class="pun"><tr><th class="corner"></th>${r.g2.map(g=>`<th>${g}</th>`).join('')}</tr>
+        ${r.g1.map((g,i)=>`<tr><th>${g}</th>${r.cells[i].map(c=>`<td>${frac(c,'sm')}</td>`).join('')}</tr>`).join('')}</table>
+      <div class="subh">Kiểu gene</div>
+      ${r.geno.map(o=>`<div class="cnt" data-t="g" data-k="${o.key}"><span class="nm">${frac(o.key,'sm')}</span>${nums([1,2,3,4],'g',o.key)}</div>`).join('')}
+      <div class="subh">Kiểu hình</div>
+      ${PHENOS.map(o=>`<div class="cnt" data-t="p" data-k="${o.key}"><span class="nm">${tomatoSVG(o.tall,o.round)}${o.key}</span>${nums([0,1,2,3,4],'p',o.key)}</div>`).join('')}
+      ${btns()}`;
+    say('<b>Bước 3:</b> em hãy đếm xem mỗi kiểu gene, mỗi kiểu hình chiếm mấy ô trong bảng Punnett.','tomatoCount');
+    $$('.seg button',stepEl).forEach(b=>b.onclick=()=>{ $$('button',b.parentElement).forEach(x=>x.classList.toggle('on',x===b)); b.closest('.cnt').classList.remove('good','bad'); fb.className='fb'; });
+    const need=row=>{ const list=row.dataset.t==='g'?r.geno:r.pheno, o=list.find(x=>x.key===row.dataset.k); return o?o.n:0; };
+    $('#s-check').onclick=()=>{
+      const rows=$$('.cnt',stepEl);
+      if(rows.some(row=>!$('button.on',row))){ fbShow(fb,'info','Em chọn số ô cho <b>tất cả</b> các dòng nhé (kiểu hình không xuất hiện thì chọn 0).'); return; }
+      let ok=true;
+      rows.forEach(row=>{ const g=+$('button.on',row).dataset.n===need(row); row.classList.remove('good','bad'); row.classList.add(g?'good':'bad'); if(!g) ok=false; });
+      if(ok){ setTimeout(()=>setStage(3),500); return; }
+      miss('Các dòng tô đỏ đếm chưa đúng.',
+        'A và B trội hoàn toàn, nên chỉ cần có một allele A là thân cao, một allele B là quả tròn. Em đếm lại số ô nhé.','tomatoCountHint');
+    };
+    $('#s-help').onclick=()=>{ $$('.cnt',stepEl).forEach(row=>$$('button',row).forEach(b=>b.classList.toggle('on',+b.dataset.n===need(row)))); $('#s-check').click(); };
+  }
+
+  /* Bước 4 – so sánh hai tỉ lệ */
+  function stepCmp(){
+    stepEl.innerHTML=`<h3>Bước 4. So sánh</h3>
+      <p class="rule">Tỉ lệ kiểu gene: <b>${ratio(r.geno)}</b> · Tỉ lệ kiểu hình: <b>${ratio(r.pheno)}</b><br>Hai tỉ lệ này có giống nhau không?</p>
+      <div class="opts g2" id="s-cmp"><button class="opt" type="button" data-v="1"><i>✓</i>Giống nhau</button><button class="opt" type="button" data-v="0"><i>≠</i>Khác nhau</button></div>`;
+    say('<b>Bước 4:</b> em hãy so sánh tỉ lệ kiểu gene với tỉ lệ kiểu hình ở hai thanh bên cạnh.','tomatoCmp');
+    $$('#s-cmp .opt').forEach(b=>b.onclick=()=>{
+      const ok=(b.dataset.v==='1')===r.same;
+      $$('#s-cmp .opt').forEach(x=>x.classList.remove('ok','no'));
+      b.classList.add(ok?'ok':'no');
+      if(ok){ $$('#s-cmp .opt').forEach(x=>x.disabled=true); $$('#x-wst span')[3].className='done'; practiced=true; finish(false); }
+      else { fbShow(fb,'no',`Chưa đúng. Em nhìn lại hai thanh: kiểu gene có <b>${r.geno.length}</b> loại, kiểu hình có <b>${r.pheno.length}</b> loại.`); say('Chưa đúng. Em nhìn lại hai thanh tỉ lệ: nếu mỗi kiểu gene cho một kiểu hình riêng thì hai tỉ lệ mới giống nhau.','tomatoCmpHint'); }
+    });
+  }
+
+  function finish(isQuick){
+    solved.add(key); $('#x-cnt').textContent=`Đã giải ${solved.size}/4 phép lai`;
+    renderRes(4, isQuick);
     const btn=$(`#x-opts .xopt[data-k="${key}"]`);
-    btn.classList.remove('ok','no'); btn.classList.add(good?'ok':'no'); $('.mark',btn).textContent=good?'✓':'✗';
+    btn.classList.remove('ok','no'); btn.classList.add(r.same?'ok':'no'); $('.mark',btn).textContent=r.same?'✓':'✗';
+    if(practiced) quick.classList.remove('hide');   // giải đủ 4 bước một lần rồi mới cho xem nhanh
     const gR=ratio(r.geno), pR=ratio(r.pheno);
-    if(good){
-      const first=!done; done=true;
+    if(r.same){
       const gt=r.geno.map(o=>`${o.n} ${o.key}`).join(' : '), pt=r.pheno.map(o=>`${o.n} ${o.key.toLowerCase()}`).join(' : ');
-      fbShow(fb,'ok',`<b>Chính xác!</b> ${crossName(key).join(' × ')} cho ${gt}, tương ứng ${pt}. Tỉ lệ kiểu gene và kiểu hình đều là <b>${gR}</b>.`);
-      say(`<b>Chính xác!</b> ${crossName(key).join(' × ')} cho ${gt}, tương ứng ${pt}. Tỉ lệ kiểu gene và kiểu hình đều là ${gR}.`,'tomato'+key);
-      if(first){ $('#x-done').classList.remove('hide'); unlock(1); }
-    } else if(!done){
-      wrong++;
-      const why=`Phép lai này cho kiểu gene <b>${gR}</b> nhưng kiểu hình <b>${pR}</b>, chưa giống nhau.`;
-      if(wrong>=2){
-        fbShow(fb,'no',`${why} Em chọn lại nhé.<br><b>Gợi ý:</b> em viết giao tử của từng cơ thể trước, rồi lập bảng Punnett nhé.`);
-        say('<b>Gợi ý:</b> em hãy viết giao tử của từng cơ thể trước, rồi lập bảng Punnett nhé.','tomatoHint');
-      } else {
-        fbShow(fb,'no',`${why} Em chọn lại nhé.`);
-        say(`${why} Em chọn lại nhé.`,'tomato'+key);
-      }
+      const msg=`<b>Chính xác!</b> ${crossName(key).join(' × ')} cho ${gt}, tương ứng ${pt}. Tỉ lệ kiểu gene và kiểu hình đều là <b>${gR}</b>.`;
+      fbShow(fb,'ok',msg); say(msg,'tomato'+key);
+      if(!done){ done=true; $('#x-done').classList.remove('hide'); unlock(1); }
     } else {
-      fbShow(fb,'info',`Phép lai này cho kiểu gene <b>${gR}</b> và kiểu hình <b>${pR}</b>, chưa giống nhau.`);
+      const msg=`Phép lai ${key} cho kiểu gene <b>${gR}</b> nhưng kiểu hình <b>${pR}</b>, chưa giống nhau.${done?'':' Em chọn phép lai khác nhé.'}`;
+      fbShow(fb,done?'info':'no',msg); say(msg,done?null:'tomato'+key);
     }
-  };
+  }
   return null;
 }
 

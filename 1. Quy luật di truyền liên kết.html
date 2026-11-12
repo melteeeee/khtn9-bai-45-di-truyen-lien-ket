@@ -81,9 +81,9 @@ button{font-family:inherit}
 .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh-1);padding:14px 16px;margin:12px 0}
 .card h3{margin:0 0 6px;font-size:16px;color:var(--brand-dark)}
 .kcard{border-radius:var(--r-sm);padding:12px 14px;margin-top:10px;border:1.5px solid var(--line);background:#fff;box-shadow:var(--sh-1)}
-.kcard .kh{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--brand-light);margin-bottom:5px}
-.kcard .dot{width:10px;height:10px;border-radius:50%;background:var(--brand-light);flex:0 0 auto}
-.kcard.cap .dot{background:#b86fc2}.kcard.cap .kh{color:#8a4795}
+.kcard .kh{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--brand);border-radius:99px;padding:4px 12px 4px 9px;margin-bottom:8px}
+.kcard .dot{width:8px;height:8px;border-radius:50%;background:#fff;flex:0 0 auto}
+.kcard.cap .kh{background:#8a4795}
 .kcard p{margin:0;font-size:14.5px;line-height:1.6}
 .kcard ul{margin:2px 0 0;padding-left:20px;font-size:14.5px;line-height:1.6}
 .checks{display:flex;flex-direction:column;gap:8px;margin-top:10px}
@@ -101,12 +101,16 @@ button{font-family:inherit}
 .opt.ok i{background:var(--brand);color:#fff}
 .opt.no{border-color:var(--bad);background:#fbeae4;color:#a54527}
 .opt.no i{background:var(--bad);color:#fff}
+/* từ khoá trong khung khái niệm */
+.kwd{font-weight:700;color:var(--brand-light)}
 /* câu chọn nhiều đáp án: ô checkbox vuông */
 .opt i.cb{border-radius:6px;background:#fff;border:2px solid var(--brand-light);color:transparent;font-size:15px}
 .opt.sel i.cb{background:var(--brand);border-color:var(--brand);color:#fff}
 .opt.ok i.cb{background:var(--brand);border-color:var(--brand);color:#fff}
 .opt.no i.cb{background:var(--bad);border-color:var(--bad);color:#fff;font-size:0}
 .opt.no i.cb::before{content:'✕';font-size:13px}
+.opt.part{border-color:#e08a2c;background:#fdf0e1;color:#8a4a10}
+.opt.part i.cb{background:#e08a2c;border-color:#e08a2c;color:#fff}
 .fb{display:none;margin:9px 0 0;padding:10px 13px;border-radius:var(--r-sm);font-size:14px;line-height:1.6}
 .fb.show{display:block}
 .fb.ok{background:var(--brand-soft);color:var(--brand-dark)}
@@ -436,7 +440,7 @@ function board(root, cards, correct, onChange){
 function quiz(host, {q, opts, multi=false, correct, ok, bad, hint, onDone}){
   let wrong=0, done=false; const chosen=new Set();
   const L='ABCDEFG';
-  host.innerHTML = `<h3>${multi?'Chọn các đáp án đúng':'Chọn đáp án đúng'}</h3><p style="margin:0">${q}</p><div class="opts">${
+  host.innerHTML = `<p style="margin:0">${q}</p><div class="opts">${
     opts.map((o,i)=>`<button class="opt" data-i="${i}" ${multi?'role="checkbox" aria-checked="false"':''}>${multi?'<i class="cb">✓</i>':`<i>${L[i]}</i>`}<span>${o}</span></button>`).join('')
   }</div>${multi?'<div><button class="qbtn q-check" disabled>Kiểm tra</button></div>':''}<div class="fb"></div>`;
   const fb = $('.fb',host);
@@ -451,7 +455,9 @@ function quiz(host, {q, opts, multi=false, correct, ok, bad, hint, onDone}){
     if(done) return;
     const i=+b.dataset.i;
     if(multi){
-      b.classList.toggle('sel'); chosen.has(i)?chosen.delete(i):chosen.add(i); b.setAttribute('aria-checked',chosen.has(i));
+      chosen.has(i)?chosen.delete(i):chosen.add(i);
+      // hiển thị luôn khớp với lựa chọn thật; xoá dấu đúng/sai của lần kiểm tra trước
+      $$('.opt',host).forEach(o=>{ const k=+o.dataset.i; o.classList.remove('ok','no','part'); o.classList.toggle('sel',chosen.has(k)); o.setAttribute('aria-checked',chosen.has(k)); });
       $('.q-check',host).disabled = chosen.size===0;
     } else {
       $$('.opt',host).forEach(o=>o.classList.remove('no','ok'));
@@ -461,7 +467,10 @@ function quiz(host, {q, opts, multi=false, correct, ok, bad, hint, onDone}){
   }));
   if(multi) $('.q-check',host).addEventListener('click',()=>{
     const good = chosen.size===correct.length && correct.every(i=>chosen.has(i));
-    $$('.opt',host).forEach(o=>{o.classList.remove('no','ok'); if(chosen.has(+o.dataset.i)){ o.classList.remove('sel'); o.classList.add(correct.includes(+o.dataset.i)?'ok':'no'); }});
+    // tô cả nhóm ô đã chọn cùng một màu để không lộ đáp án từng ô:
+    // xanh = đúng hoàn toàn, cam = có ít nhất một ô đúng, đỏ = không ô nào đúng
+    const cls = good ? 'ok' : ([...chosen].some(i=>correct.includes(i)) ? 'part' : 'no');
+    $$('.opt',host).forEach(o=>{o.classList.remove('no','ok','part'); if(chosen.has(+o.dataset.i)) o.classList.add(cls); });
     finish(good);
   });
 }
@@ -498,15 +507,30 @@ const SFX=(()=>{
    Lời đọc của từng khoá nằm trong tts/tts_phan_1_bai_45.json (khoá ghi trong dấu [ ] ở cuối tên file). */
 const AUDIO = {
   // Bước 1: Thí nghiệm của Morgan
-  p: '', pCross: '', f1: '', lp: '', fa: '',
+  p: 'https://assets.yoolife.com.vn/yootek/1794457414460-6289.mp3',
+  pCross: 'https://assets.yoolife.com.vn/yootek/1794457418370-5213.mp3',
+  f1: 'https://assets.yoolife.com.vn/yootek/1794457422259-4773.mp3',
+  lp: 'https://assets.yoolife.com.vn/yootek/1794457426465-8197.mp3',
+  fa: 'https://assets.yoolife.com.vn/yootek/1794457430341-7031.mp3',
   // Bước 2: Nếu theo Mendel?
-  mendel: '', mendelB: '', q3: '',
+  mendel: 'https://assets.yoolife.com.vn/yootek/1794457434298-8625.mp3',
+  mendelB: 'https://assets.yoolife.com.vn/yootek/1794457438333-6554.mp3',
+  q3: 'https://assets.yoolife.com.vn/yootek/1794457442271-1479.mp3',
   // Bước 3: Giải thích (3D)
-  cell: '', pair: '', genes: '', meioL: '', gam2: '', fert: '', indep: '', meioI: '',
+  cell: 'https://assets.yoolife.com.vn/yootek/1794457446230-8531.mp3',
+  pair: 'https://assets.yoolife.com.vn/yootek/1794457450226-3302.mp3',
+  genes: 'https://assets.yoolife.com.vn/yootek/1794457454157-1836.mp3',
+  meioL: 'https://assets.yoolife.com.vn/yootek/1794457458011-3061.mp3',
+  gam2: 'https://assets.yoolife.com.vn/yootek/1794457461945-6920.mp3',
+  fert: 'https://assets.yoolife.com.vn/yootek/1794457465937-6819.mp3',
+  indep: 'https://assets.yoolife.com.vn/yootek/1794457469832-9366.mp3',
+  meioI: 'https://assets.yoolife.com.vn/yootek/1794457473918-3549.mp3',
   // Bước 4: Khái niệm
-  concept: '', conceptOk: '',
+  concept: 'https://assets.yoolife.com.vn/yootek/1794457477893-6085.mp3',
+  conceptOk: 'https://assets.yoolife.com.vn/yootek/1794457481711-4880.mp3',
   // Bước 5: So sánh hai quy luật
-  table: '', meaning: '',
+  table: 'https://assets.yoolife.com.vn/yootek/1794457485654-9467.mp3',
+  meaning: 'https://assets.yoolife.com.vn/yootek/1794457489482-9495.mp3',
 };
 let voice=null, muted=false, started=false, lastKey=null;
 function stopVoice(){ if(voice){ voice.pause(); voice=null; } }
@@ -521,7 +545,7 @@ function say(text,key){
   const t=$('#narrTx'); if(t) t.innerHTML=text;
   lastKey=key||null; playVoice(key);
 }
-const narrHTML = `<div class="nar"><div class="tx" id="narrTx"></div></div>`;
+const narrHTML = ``;   // không hiện khung lời cô giáo; lời thuyết minh chỉ phát bằng voice
 $('#btnNarr').setAttribute('aria-pressed','true');
 $('#btnNarr').onclick=()=>{ muted=!muted; $('#btnNarr').setAttribute('aria-pressed',!muted); if(muted) stopVoice(); else playVoice(lastKey); };
 $('#lessonToggle').onclick=()=>{ const l=$('#lesson'); l.classList.toggle('collapsed'); $('#lessonToggle').textContent=l.classList.contains('collapsed')?'▸':'▾'; };
@@ -814,16 +838,74 @@ function act1b(P, V){
         onDone:()=>{
           $('#bk2').classList.add('done');
           C&&C.showReal();
-          say('Em hãy trả lời <b>câu hỏi 3</b>: em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?','q3');
-          quiz(next('#b-q3'),{q:'<b>Phần 3 – Nhận xét (câu hỏi 3).</b> Em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?',
+          say('Em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?','q3');
+          quiz(next('#b-q3'),{q:'<b>Phần 3 – Nhận xét.</b> Em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?',
             opts:['Thân xám luôn đi cùng cánh dài, thân đen luôn đi cùng cánh cụt: hai tính trạng di truyền cùng nhau','Thân xám luôn đi cùng cánh cụt','Hai tính trạng di truyền riêng rẽ, đúng như Mendel'],correct:[0],
-            ok:'Thân xám luôn di truyền cùng cánh dài, thân đen luôn di truyền cùng cánh cụt. Hai tính trạng <b>không phân li độc lập</b> mà di truyền cùng nhau. Vì sao lại như vậy? Em bấm ▶ để nhìn vào bên trong tế bào nhé.',
+            ok:'Thân xám luôn di truyền cùng cánh dài, thân đen luôn di truyền cùng cánh cụt. Hai tính trạng <b>không phân li độc lập</b> mà di truyền cùng nhau. Vì sao lại như vậy?',
             bad:'Chưa đúng rồi, em nhìn lại hai nhóm ruồi ở thế hệ Fa nhé.',hint:'hãy nhìn lại hai nhóm ruồi ở thế hệ Fa: tính trạng nào luôn đi cùng nhau?',
             onDone:()=>{ $('#bk3').classList.add('done'); unlock(2); }});
         }});
     }});
   return B?B.dispose:null;
 }
+
+/* ============ NST kép 3D và các pha giảm phân (dùng chung cho bước 3, 4, 5) ============
+   Mỗi NST trong cặp tương đồng được dựng bằng 2 chromatid; ở trạng thái ban đầu hai chromatid trùng nhau (NST đơn).
+   m: tiến trình 0 → 1
+     0    – 0.15  kì trung gian: NST nhân đôi → NST kép (2 chromatid)
+     0.20 – 0.58  giảm phân I: hai NST kép của cặp tương đồng phân li về hai tế bào con
+     0.66 – 0.98  giảm phân II: hai chromatid tách nhau đi về hai tế bào → 4 giao tử, mỗi giao tử 1 NST đơn
+   Không có trao đổi chéo: ruồi đực F1 liên kết hoàn toàn. */
+const nstMat=(c,o={})=>new THREE.MeshPhongMaterial(Object.assign({color:c,shininess:70,specular:0x2a2a2a},o));
+function nstRodGeo(len,r,cen){
+  const pts=[], N=80, h=len/2;
+  for(let i=0;i<=N;i++){
+    const y=-h+len*i/N; let rad=r; const d=Math.abs(y)-(h-r);
+    if(d>0) rad=r*Math.sqrt(Math.max(0,1-(d/r)**2));
+    rad*=1-.42*Math.exp(-(((y-cen)/(r*.9))**2));
+    pts.push(new THREE.Vector2(Math.max(rad,1e-4),y));
+  }
+  return new THREE.LatheGeometry(pts,36);
+}
+// genes: [{y,color}] – vị trí gene giống nhau trên hai chromatid chị em
+function makeHomolog(color,len,cen,genes,r=.27){
+  const g=new THREE.Group(), sis=[], bands=[];
+  for(let k=0;k<2;k++){
+    const c=new THREE.Group();
+    c.add(new THREE.Mesh(nstRodGeo(len,r,cen),nstMat(color)));
+    c.userData.bands=genes.map(gn=>{ const m=new THREE.Mesh(new THREE.CylinderGeometry(r*1.16,r*1.16,.26,36),nstMat(gn.color,{shininess:90})); m.position.y=gn.y; c.add(m); bands.push(m); return m; });
+    g.add(c); sis.push(c);
+  }
+  g.userData={sis,bands,cen,len,r};
+  poseHomolog(g,0,1,true);
+  return g;
+}
+function poseHomolog(H,off,sc,joined){
+  const u=H.userData;
+  u.sis[0].position.x=-off; u.sis[1].position.x=off; u.sis[1].visible=off>.01;
+  u.sis.forEach(c=>c.scale.setScalar(sc));
+}
+function meioPhases(m){
+  const cl=x=>Math.max(0,Math.min(1,x)), ez=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  return {p1:ez(cl(m/.15)), p2:ez(cl((m-.2)/.38)), p3:ez(cl((m-.66)/.32))};
+}
+// o: {x0, dir (−1 trái | 1 phải), y0, y1 (sau GP I), y2 (sau GP II)}
+const MEIO_KID_X=3.6, MEIO_SPLIT=1.6, MEIO_GAM_X=[-5.2,-2.0,2.0,5.2];
+function meioPose(H,m,o){
+  const {p1,p2,p3}=meioPhases(m);
+  H.position.x=o.x0+(o.dir*MEIO_KID_X-o.x0)*p2;
+  H.position.y=(o.y0||0)+((o.y1??o.y0??0)-(o.y0||0))*p2+((o.y2??o.y1??o.y0??0)-(o.y1??o.y0??0))*p3;
+  poseHomolog(H,.27*p1+(MEIO_SPLIT-.27)*p3,1-.3*p3,p3<.02);
+}
+function meioStage(m){
+  if(m<=0) return '';
+  if(m<.18) return 'Kì trung gian: NST nhân đôi thành NST kép';
+  if(m<.62) return 'Giảm phân I: hai NST kép của cặp tương đồng phân li';
+  if(m<.99) return 'Giảm phân II: hai chromatid tách nhau';
+  return 'Kết quả: 4 giao tử, mỗi giao tử mang 1 NST đơn';
+}
+// độ hiện của tế bào mẹ, 2 tế bào con (sau GP I), 4 tế bào giao tử (sau GP II)
+function meioCellOp(m){ const {p2,p3}=meioPhases(m); return {main:1-Math.min(1,p2*1.6), kid:Math.min(1,Math.max(0,(p2-.35)/.65))*(1-p3), gam:Math.max(0,(p3-.35)/.65)}; }
 
 /* ============ 1c – Giải thích: 3D ============ */
 function act1c(P, V){
@@ -904,17 +986,18 @@ function act1c(P, V){
   }
   const RED=0xd7473c, BLU=0x3a78e0, GOLD=0xffc93c, VIO=0xa66be0, FAINT=0xc5d6d3;
   let mode='link', meiosis=0, playing=false, slow=false, arrange=0, explored=new Set(), fertDone=false, meioDone=false, spin=false;
-  let main, kids=[], geneBands=[], others=[], R,Bl, A1,A2,V1,V2, gamL=null, gamR=null, pulse=0, tween=null;
+  let main, kids=[], grand=[], gams=[], homs=[], stageL=null, geneBands=[], others=[], R,Bl, A1,A2,V1,V2, pulse=0, tween=null;
   const tags={};
   // thoi phân bào
   const spGeo=new THREE.BufferGeometry(), spMat=new THREE.LineBasicMaterial({color:0xe6fffb,transparent:true,opacity:0});
   const spindle=new THREE.LineSegments(spGeo,spMat); scene.add(spindle);
   const tmpV=new THREE.Vector3();
-  function updSpindle(e){
-    const op = meiosis>0&&meiosis<1 ? .85*Math.min(1,e*5)*(1-Math.max(0,(e-.75)/.25)) : 0;
+  function updSpindle(m){
+    const {p2}=meioPhases(m);
+    const op = p2>0&&p2<1 ? .85*Math.min(1,p2*5)*(1-Math.max(0,(p2-.75)/.25)) : 0;
     spMat.opacity=op; spindle.visible=op>.01; if(!spindle.visible) return;
-    const chs = mode==='link'?[R,Bl]:[A1,A2,V1,V2], pts=[], P=4.9;
-    chs.forEach(c=>{ const s=Math.sign(c.position.x-c.userData.x0); if(!s) return; c.getWorldPosition(tmpV); pts.push(s*P,0,0, tmpV.x,tmpV.y+c.userData.cen,0); });
+    const pts=[], P=4.9;
+    homs.forEach(([H,o])=>{ H.getWorldPosition(tmpV); pts.push(o.dir*P,0,0, tmpV.x,tmpV.y+H.userData.cen,0); });
     [-1,1].forEach(s=>{ for(let k=0;k<8;k++){ const a=k/8*Math.PI*2; pts.push(s*P,0,0, s*P+Math.cos(a)*.55,Math.sin(a)*.55,0); } });
     spGeo.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
   }
@@ -925,7 +1008,7 @@ function act1c(P, V){
 
   function clearWorld(){
     while(root.children.length) root.remove(root.children[0]);
-    labels.splice(0).forEach(l=>l.el.remove()); geneBands=[]; kids=[]; others=[]; gamL=gamR=null;
+    labels.splice(0).forEach(l=>l.el.remove()); geneBands=[]; kids=[]; grand=[]; gams=[]; homs=[]; stageL=null; others=[];
     Object.values(tags).forEach(t=>t.el.remove()); for(const k in tags) delete tags[k];
     lineSvg.innerHTML='';
   }
@@ -934,18 +1017,35 @@ function act1c(P, V){
     const b=document.createElement('button'); b.type='button'; b.className='tagbtn '+align+(cls?' '+cls:''); b.textContent=text; host.appendChild(b);
     tags[key]={el:b,anchor:anc,targets,align}; return b;
   }
+  // nhãn gene: chromatid phía ngoài luôn có nhãn; chromatid phía trong hiện nhãn khi đã tách ở giảm phân II
+  function geneLabels(H,txt,side){
+    const sis=H.userData.sis, out=sis[side<0?0:1], inn=sis[side<0?1:0];
+    out.userData.bands.forEach((b,i)=>addLabel(b,txt[i],'g',side*30,0));
+    inn.userData.bands.forEach((b,i)=>{ const l=addLabel(b,txt[i],'g',-side*30,0); l.show=()=>meioPhases(meiosis).p3>.6; });
+  }
+  function buildCells(names){
+    kids=[cellSphere(2.1,-MEIO_KID_X,0,0),cellSphere(2.1,MEIO_KID_X,0,0)];
+    grand=MEIO_GAM_X.map(x=>cellSphere(1.45,x,0,0));
+    [...kids,...grand].forEach(k=>root.add(k));
+    gams=grand.map((g,i)=>addLabel(anchor(g,0,1.85),'Giao tử '+names[i],'gam'));
+    stageL=addLabel(anchor(root,0,3.75),'','gam stage');
+  }
+  function setIndepHoms(){
+    homs=[[A1,{x0:-.55,dir:-1,y0:1.3,y1:.85,y2:.7}],[A2,{x0:.55,dir:1,y0:1.3,y1:.85,y2:.7}],
+          [V1,{x0:-.55,dir:arrange?1:-1,y0:-1.3,y1:-.85,y2:-.62}],[V2,{x0:.55,dir:arrange?-1:1,y0:-1.3,y1:-.85,y2:-.62}]];
+  }
   function markChecks(){ $('#ck1').classList.toggle('done',explored.has(1)); $('#ck2').classList.toggle('done',explored.has(2)); }
   function buildLink(){
     clearWorld(); mode='link'; meiosis=0;
     main=cellSphere(3.1); root.add(main);
     faint([[-1.75,1.35,.5],[1.85,1.25,-.6],[-1.7,-1.45,-.45],[1.8,-1.4,.4]]);
     const LB=.95, LV=-.8;
-    R=chromo(RED,3.4,.27,.2); Bl=chromo(BLU,3.4,.27,.2); R.position.set(-.55,0,0); Bl.position.set(.55,0,0); root.add(R,Bl); setX0(R,Bl);
-    const bB=band(R,LB,GOLD), bV=band(R,LV,VIO), bb=band(Bl,LB,GOLD), bv=band(Bl,LV,VIO);
-    geneBands=[bB,bV,bb,bv];
-    [[bB,'B',-1],[bV,'V',-1],[bb,'b',1],[bv,'v',1]].forEach(([m,t,s])=>addLabel(m,t,'g',s*30,0));
-    kids=[cellSphere(1.95,-3.8,0,0),cellSphere(1.95,3.8,0,0)]; kids.forEach(k=>root.add(k));
-    gamL=addLabel(anchor(kids[0],0,2.3),'Giao tử BV','gam'); gamR=addLabel(anchor(kids[1],0,2.3),'Giao tử bv','gam');
+    R=makeHomolog(RED,3.4,.2,[{y:LB,color:GOLD},{y:LV,color:VIO}]); Bl=makeHomolog(BLU,3.4,.2,[{y:LB,color:GOLD},{y:LV,color:VIO}]);
+    R.position.set(-.55,0,0); Bl.position.set(.55,0,0); root.add(R,Bl);
+    homs=[[R,{x0:-.55,dir:-1}],[Bl,{x0:.55,dir:1}]];
+    geneBands=[...R.userData.bands,...Bl.userData.bands];
+    geneLabels(R,['B','V'],-1); geneLabels(Bl,['b','v'],1);
+    buildCells(['BV','BV','bv','bv']);
     // nhãn 1: phía trên cặp NST, đường dẫn rẽ xuống đầu hai NST
     addTag('t1','Cặp NST tương đồng của F1',anchor(root,0,2.75),[anchor(R,0,1.72),anchor(Bl,0,1.72)],'c');
     // nhãn 2: dưới cặp NST, đường dẫn đi lên khe giữa hai NST, chấm đúng hai vị trí gene
@@ -962,14 +1062,13 @@ function act1c(P, V){
     clearWorld(); mode='indep'; meiosis=0;
     main=cellSphere(3.1); root.add(main);
     faint([[-1.9,.1,.5],[1.95,.05,-.5]]);
-    A1=chromo(RED,1.9,.27,.35); A2=chromo(BLU,1.9,.27,.35); V1=chromo(RED,1.6,.27,-.3); V2=chromo(BLU,1.6,.27,-.3);
+    A1=makeHomolog(RED,1.9,.35,[{y:-.35,color:GOLD}]); A2=makeHomolog(BLU,1.9,.35,[{y:-.35,color:GOLD}]);
+    V1=makeHomolog(RED,1.6,-.3,[{y:.3,color:VIO}]); V2=makeHomolog(BLU,1.6,-.3,[{y:.3,color:VIO}]);
     A1.position.set(-.55,1.3,0); A2.position.set(.55,1.3,0); V1.position.set(-.55,-1.3,0); V2.position.set(.55,-1.3,0);
-    root.add(A1,A2,V1,V2); setX0(A1,A2,V1,V2);
-    const gB=band(A1,-.35,GOLD), gb=band(A2,-.35,GOLD), gV=band(V1,.3,VIO), gv=band(V2,.3,VIO);
-    geneBands=[gB,gb,gV,gv];
-    [[gB,'B',-1],[gb,'b',1],[gV,'V',-1],[gv,'v',1]].forEach(([m,t,s])=>addLabel(m,t,'g',s*30,0));
-    kids=[cellSphere(1.95,-3.8,0,0),cellSphere(1.95,3.8,0,0)]; kids.forEach(k=>root.add(k));
-    gamL=addLabel(anchor(kids[0],0,2.3),'Giao tử BV','gam'); gamR=addLabel(anchor(kids[1],0,2.3),'Giao tử bv','gam');
+    root.add(A1,A2,V1,V2);
+    geneBands=[A1,A2,V1,V2].flatMap(H=>H.userData.bands);
+    geneLabels(A1,['B'],-1); geneLabels(A2,['b'],1); geneLabels(V1,['V'],-1); geneLabels(V2,['v'],1);
+    setIndepHoms(); buildCells(['BV','BV','bv','bv']);
     addTag('t1','Cặp NST thứ nhất mang Bb',anchor(root,0,2.65),[anchor(root,0,.95)],'c','cap');
     addTag('t2','Cặp NST thứ hai mang Vv',anchor(root,0,-2.6),[anchor(root,0,-1.0)],'b','cap');
   }
@@ -991,7 +1090,7 @@ function act1c(P, V){
   buildLink(); upd();
 
   $('#c-meio').onclick=()=>{ if(meiosis>=1) meiosis=0; playing=!playing; if(playing&&meiosis===0&&mode==='indep') arrange=Math.random()<.5?0:1; if(playing) flyTo(homePos());
-    if(playing && meiosis<.05) say(mode==='link'?'Hai NST của cặp tương đồng <b>phân li về hai tế bào con</b>. Vì B và V cùng nằm trên một NST nên đi cùng nhau, b và v cũng vậy.':'Lúc này hai cặp gene nằm trên hai cặp NST khác nhau nên các NST <b>phân li độc lập</b> với nhau.',mode==='link'?'meioL':'meioI'); upd(); };
+    if(playing && meiosis<.05) say(mode==='link'?'Ở kì trung gian, mỗi NST nhân đôi thành <b>NST kép</b> gồm hai chromatid. Ở <b>giảm phân I</b>, hai NST kép của cặp tương đồng phân li về hai tế bào con. Ở <b>giảm phân II</b>, hai chromatid tách nhau. Vì B và V cùng nằm trên một NST nên luôn đi cùng nhau, b và v cũng vậy.':'Lúc này hai cặp gene nằm trên hai cặp NST khác nhau. Ở giảm phân I, hai cặp NST kép <b>phân li độc lập</b> với nhau, rồi ở giảm phân II các chromatid tách nhau.',mode==='link'?'meioL':'meioI'); upd(); };
   $('#c-replay').onclick=()=>{ meiosis=0; playing=true; if(mode==='indep') arrange=Math.random()<.5?0:1; $('#c-out').innerHTML=''; flyTo(homePos()); upd(); };
   $('#c-slow').onclick=()=>{ slow=!slow; upd(); };
   $('#c-fert').onclick=()=>{
@@ -1019,7 +1118,7 @@ function act1c(P, V){
   }
   function indepOut(){
     $('#c-out').innerHTML=`<p class="muted" style="margin:10px 0 0;font-size:13.5px"><b>F1 cho 4 loại giao tử (phân li độc lập):</b></p><div><span class="chip2">BV</span><span class="chip2">Bv</span><span class="chip2">bV</span><span class="chip2">bv</span></div>
-    <p class="count" style="margin:6px 0 0">Mỗi lần giảm phân, các NST sắp xếp theo một trong hai cách (BV | bv hoặc Bv | bV) nên tổng cộng có 4 loại giao tử. Bấm “Xem lại” để thấy cách sắp xếp khác.</p>`;
+    <p class="count" style="margin:6px 0 0">Mỗi tế bào giảm phân cho 4 giao tử thuộc 2 loại, tuỳ cách các NST kép sắp xếp ở giảm phân I (BV | bv hoặc Bv | bV). Xét nhiều tế bào thì có đủ 4 loại giao tử. Bấm “Xem lại” để thấy cách sắp xếp khác.</p>`;
   }
   const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
   const v=new THREE.Vector3();
@@ -1029,23 +1128,17 @@ function act1c(P, V){
   const isNarrow=()=>host.clientWidth<700;
   function frame(now){
     raf=requestAnimationFrame(frame); const dt=Math.min((now-last)/1000,.05); last=now;
-    if(playing){ meiosis=Math.min(1,meiosis+dt/(slow?14:6)); if(meiosis>=1){ playing=false; meioDone=true;
-        if(mode==='link') say('Do đó F1 chỉ tạo hai loại giao tử là <b>BV</b> và <b>bv</b>. Em bấm <b>“Thụ tinh với giao tử bv của ruồi cái”</b> nhé.','gam2');
+    if(playing){ meiosis=Math.min(1,meiosis+dt/(slow?22:10)); if(meiosis>=1){ playing=false; meioDone=true;
+        if(mode==='link') say('Kết thúc giảm phân tạo ra 4 giao tử, nhưng chỉ có <b>hai loại</b> là <b>BV</b> và <b>bv</b>. Em bấm <b>“Thụ tinh với giao tử bv của ruồi cái”</b> nhé.','gam2');
         else indepOut(); upd(); } }
-    const e=ease(meiosis);
-    if(mode==='link'){
-      R.position.x=-.55-3.25*e; Bl.position.x=.55+3.25*e;
-    } else {
-      // NST di chuyển về hai cực; cặp thứ hai thu gọn lại gần cặp thứ nhất trong tế bào con
-      A1.position.set(-.55-3.25*e,1.3-.45*e,0); A2.position.set(.55+3.25*e,1.3-.45*e,0);
-      const yV=-1.3+.45*e;
-      if(arrange){ V1.position.set(-.55+4.35*e,yV,0); V2.position.set(.55-4.35*e,yV,0); }
-      else { V1.position.set(-.55-3.25*e,yV,0); V2.position.set(.55+3.25*e,yV,0); }
-      if(gamL){ gamL.el.textContent='Giao tử '+(arrange?'Bv':'BV'); gamR.el.textContent='Giao tử '+(arrange?'bV':'bv'); }
-    }
-    if(gamL){ gamL.el.style.opacity=gamR.el.style.opacity=e>.95?1:0; }
-    others.forEach(c=>c.children[0].material.opacity=.5*(1-Math.min(1,e*3)));
-    main.material.uniforms.uOp.value=1-Math.min(1,e*1.6); kids.forEach(k=>k.material.uniforms.uOp.value=Math.max(0,(e-.35)/.65));
+    const e=meiosis;
+    if(mode==='indep') setIndepHoms();
+    homs.forEach(([H,o])=>meioPose(H,e,o));
+    if(mode==='indep') gams.forEach((g,i)=>g.el.textContent='Giao tử '+(i<2?'B'+(arrange?'v':'V'):'b'+(arrange?'V':'v')));
+    gams.forEach(g=>g.el.style.opacity=e>.97?1:0);
+    if(stageL){ const st=meioStage(e); stageL.el.textContent=st; stageL.el.style.opacity=st?1:0; }
+    others.forEach(c=>c.children[0].material.opacity=.5*(1-Math.min(1,e*4)));
+    const op=meioCellOp(e); main.material.uniforms.uOp.value=op.main; kids.forEach(k=>k.material.uniforms.uOp.value=op.kid); grand.forEach(k=>k.material.uniforms.uOp.value=op.gam);
     updSpindle(e);
     if(pulse>0){ pulse-=dt; const on=Math.sin(now/120)>0; geneBands.forEach(b=>b.material.emissive.setHex(on?0x886600:0)); if(pulse<=0) geneBands.forEach(b=>b.material.emissive.setHex(0)); }
     if(tween){ tween.t=Math.min(1,tween.t+dt/1.2); const k=ease(tween.t); camera.position.lerpVectors(tween.from,tween.to,k); controls.target.lerpVectors(tween.tf,tween.tt,k); if(tween.t>=1) tween=null; }
@@ -1053,7 +1146,7 @@ function act1c(P, V){
     const w=host.clientWidth,h=host.clientHeight;
     // dịch tâm cảnh sang trái, tránh bảng bài học che
     const proj=o=>{ o.getWorldPosition(v); v.project(camera); return [(v.x*.5+.5)*w,(-v.y*.5+.5)*h]; };
-    labels.forEach(l=>{ const p=proj(l.obj); l.el.style.left=(p[0]+l.dx)+'px'; l.el.style.top=(p[1]+l.dy)+'px'; });
+    labels.forEach(l=>{ const p=proj(l.obj); l.el.style.left=(p[0]+l.dx)+'px'; l.el.style.top=(p[1]+l.dy)+'px'; if(l.show) l.el.style.opacity=l.show()?1:0; });
     let svg='';
     Object.values(tags).forEach(t=>{
       const hidden = meiosis>0 || t.el.style.display==='none';
@@ -1069,7 +1162,7 @@ function act1c(P, V){
   function applyOffset(){ const w=host.clientWidth,h=host.clientHeight; if(!w||!h) return; const wide=innerWidth>900; const shift = wide ? Math.min(540,w*.46)+72 : 0; const vs = wide ? 0 : (h*.5+16)/2; camera.setViewOffset(w,h,shift/2,vs,w,h); }
   // khoảng cách camera để vừa khung nhìn: halfW = nửa bề ngang cần thấy, halfH = nửa chiều cao cần thấy (đơn vị cảnh)
   function fitPos(halfW,halfH){ const w=host.clientWidth||800,h=host.clientHeight||600; const wide=innerWidth>900; const shift=wide?Math.min(540,w*.46)+72:0; const lw=Math.max(220,w-shift); const lh=wide?h:h*.5-16; return [0,0,Math.max(halfW/(0.4142*lw/h),halfH/(0.4142*lh/h))]; }
-  function homePos(){ return fitPos(6.4,3.9); }            // thấy cả hai tế bào con khi giảm phân
+  function homePos(){ return fitPos(6.9,4.2); }            // thấy cả hai tế bào con khi giảm phân
   function cellPos(){ return fitPos(3.7,3.9); }            // thấy vừa một tế bào
   controls.maxDistance=40;
   const ro2=new ResizeObserver(()=>{ applyOffset(); if(!meiosis&&!tween&&!explored.size) camera.position.set(...cellPos()); }); ro2.observe(host); applyOffset(); camera.position.set(...cellPos());
@@ -1091,13 +1184,6 @@ function mini3D(V, units, halfW, halfH){
   const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.enablePan=false; controls.minDistance=4; controls.maxDistance=60;
   scene.add(new THREE.AmbientLight(0xffffff,.75)); const dl=new THREE.DirectionalLight(0xffffff,.8); dl.position.set(4,6,8); scene.add(dl);
   scene.add(new THREE.HemisphereLight(0xe8fbff,0x1b4d4a,.35));
-  const mat=c=>new THREE.MeshPhongMaterial({color:c,shininess:70,specular:0x2a2a2a});
-  function rodGeo(len,r,cen){ const pts=[],N=60,h=len/2;
-    for(let i=0;i<=N;i++){ const y=-h+len*i/N; let rad=r; const d=Math.abs(y)-(h-r); if(d>0) rad=r*Math.sqrt(Math.max(0,1-(d/r)**2));
-      rad*=1-.42*Math.exp(-(((y-cen)/(r*.9))**2)); pts.push(new THREE.Vector2(Math.max(rad,1e-4),y)); }
-    return new THREE.LatheGeometry(pts,36); }
-  function chromo(color,len,cen){ const g=new THREE.Group(); g.add(new THREE.Mesh(rodGeo(len,.27,cen),mat(color))); return g; }
-  function band(p,y,c){ const m=new THREE.Mesh(new THREE.CylinderGeometry(.31,.31,.26,36),mat(c)); m.position.y=y; p.add(m); return m; }
   function cell(r,x,y,op){ const m=new THREE.Mesh(new THREE.SphereGeometry(r,48,32),new THREE.ShaderMaterial({transparent:true,depthWrite:false,
       uniforms:{uOp:{value:op},uCol:{value:new THREE.Color(0xc4f1f6)}},
       vertexShader:'varying vec3 vN;varying vec3 vV;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}',
@@ -1109,26 +1195,36 @@ function mini3D(V, units, halfW, halfH){
   function anchor(p,x,y){ const o=new THREE.Object3D(); o.position.set(x,y,0); p.add(o); return o; }
   const U=units.map(u=>{
     const g=new THREE.Group(); g.position.y=u.y||0; scene.add(g);
-    const main=cell(3.1,0,0,1), kids=[cell(1.95,-3.8,0,0),cell(1.95,3.8,0,0)]; g.add(main,...kids);
-    const o={u,g,main,kids,chs:[],arrange:0};
-    const gl=t=>[[t[0],'g',-30],[t[1],'g',30]];
+    const main=cell(3.1,0,0,1), kids=[cell(2.1,-MEIO_KID_X,0,0),cell(2.1,MEIO_KID_X,0,0)], grand=MEIO_GAM_X.map(x=>cell(1.45,x,0,0));
+    g.add(main,...kids,...grand);
+    const o={u,g,main,kids,grand,arrange:0,m:0};
+    // nhãn gene: chromatid ngoài luôn có nhãn, chromatid trong hiện nhãn khi đã tách ở giảm phân II
+    const gl=(H,txt,side)=>{ const sis=H.userData.sis, out=sis[side<0?0:1], inn=sis[side<0?1:0];
+      out.userData.bands.forEach((b,i)=>lbl(b,txt[i],'g',side*28));
+      inn.userData.bands.forEach((b,i)=>{ const l=lbl(b,txt[i],'g',-side*28); l.show=()=>meioPhases(o.m).p3>.6; }); };
     if(u.type==='link'){
-      const R=chromo(RED,3.4,.2), B=chromo(BLU,3.4,.2); R.position.x=-.55; B.position.x=.55; g.add(R,B);
-      lbl(band(R,.95,GOLD),'B','g',-30); lbl(band(R,-.8,VIO),'V','g',-30); lbl(band(B,.95,GOLD),'b','g',30); lbl(band(B,-.8,VIO),'v','g',30);
-      o.chs=[{c:R,x0:-.55,y0:0,s:-1},{c:B,x0:.55,y0:0,s:1}];
+      const G=[{y:.95,color:GOLD},{y:-.8,color:VIO}];
+      const R=makeHomolog(RED,3.4,.2,G), B=makeHomolog(BLU,3.4,.2,G); R.position.x=-.55; B.position.x=.55; g.add(R,B);
+      gl(R,['B','V'],-1); gl(B,['b','v'],1);
+      o.homs=()=>[[R,{x0:-.55,dir:-1}],[B,{x0:.55,dir:1}]];
+      o.names=()=>['BV','BV','bv','bv'];
     } else {
-      const A1=chromo(RED,1.9,.35),A2=chromo(BLU,1.9,.35),V1=chromo(RED,1.6,-.3),V2=chromo(BLU,1.6,-.3);
+      const A1=makeHomolog(RED,1.9,.35,[{y:-.35,color:GOLD}]),A2=makeHomolog(BLU,1.9,.35,[{y:-.35,color:GOLD}]),
+            V1=makeHomolog(RED,1.6,-.3,[{y:.3,color:VIO}]),V2=makeHomolog(BLU,1.6,-.3,[{y:.3,color:VIO}]);
       A1.position.set(-.55,1.3,0);A2.position.set(.55,1.3,0);V1.position.set(-.55,-1.3,0);V2.position.set(.55,-1.3,0); g.add(A1,A2,V1,V2);
-      lbl(band(A1,-.35,GOLD),'B','g',-30); lbl(band(A2,-.35,GOLD),'b','g',30); lbl(band(V1,.3,VIO),'V','g',-30); lbl(band(V2,.3,VIO),'v','g',30);
-      o.chs=[{c:A1,x0:-.55,y0:1.3,s:-1},{c:A2,x0:.55,y0:1.3,s:1},{c:V1,x0:-.55,y0:-1.3,s:-1,v:1},{c:V2,x0:.55,y0:-1.3,s:1,v:1}];
+      gl(A1,['B'],-1); gl(A2,['b'],1); gl(V1,['V'],-1); gl(V2,['v'],1);
+      o.homs=()=>[[A1,{x0:-.55,dir:-1,y0:1.3,y1:.85,y2:.7}],[A2,{x0:.55,dir:1,y0:1.3,y1:.85,y2:.7}],
+                  [V1,{x0:-.55,dir:o.arrange?1:-1,y0:-1.3,y1:-.85,y2:-.62}],[V2,{x0:.55,dir:o.arrange?-1:1,y0:-1.3,y1:-.85,y2:-.62}]];
+      o.names=()=>{ const l='B'+(o.arrange?'v':'V'), r='b'+(o.arrange?'V':'v'); return [l,l,r,r]; };
     }
     if(u.title) lbl(anchor(g,0,3.55),u.title,'gam');
-    o.gL=lbl(anchor(kids[0],0,2.3),'Giao tử BV','gam'); o.gR=lbl(anchor(kids[1],0,2.3),'Giao tử bv','gam');
+    o.gams=grand.map(c=>lbl(anchor(c,0,1.85),'','gam'));
     return o;
   });
+  const stageHud=document.createElement('div'); stageHud.className='hud'; host.appendChild(stageHud);
   const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
   let paused=false, t=0, raf, last=performance.now();
-  const CYCLE=10; // 1.5s đứng yên, 6s giảm phân, 2.5s giữ kết quả
+  const CYCLE=12.5; // 1.5s đứng yên, 8s giảm phân (kì trung gian → GP I → GP II), 3s giữ kết quả
   const btn=document.createElement('button'); btn.className='ghost xt'; btn.textContent='⏸ Tạm dừng'; btn.onclick=()=>{ paused=!paused; btn.textContent=paused?'▶ Chạy tiếp':'⏸ Tạm dừng'; }; $('#tools').appendChild(btn);
   const shiftPx=()=>{ const w=host.clientWidth; if(innerWidth<=900) return 0; return (wideStage()? w*.5 : Math.min(540,w*.46))+72; };
   function fit(){ const w=host.clientWidth||800,h=host.clientHeight||600, wide=innerWidth>900, lw=Math.max(220,w-shiftPx()), lh=wide?h:h*.5-16;
@@ -1140,19 +1236,17 @@ function mini3D(V, units, halfW, halfH){
   function frame(now){
     raf=requestAnimationFrame(frame); const dt=Math.min((now-last)/1000,.05); last=now;
     if(!paused){ const nt=(t+dt)%CYCLE; if(nt<t) U.forEach(o=>o.arrange^=1); t=nt; }
-    const e=ease(Math.min(1,Math.max(0,(t-1.5)/6)));
+    const m=Math.min(1,Math.max(0,(t-1.5)/8));
+    const st=meioStage(m); stageHud.textContent=st; stageHud.style.opacity=st?1:0;
     U.forEach(o=>{
-      o.chs.forEach(k=>{ let s=k.s; if(k.v&&o.arrange) s=-s;
-        k.c.position.x = s<0 ? -.55-3.25*e : .55+3.25*e;
-        if(k.v && o.arrange) k.c.position.x = k.s<0 ? -.55+4.35*e : .55-4.35*e;
-        if(o.u.type==='indep') k.c.position.y = k.y0>0 ? 1.3-.45*e : -1.3+.45*e; });
-      if(o.u.type==='indep'){ o.gL.el.textContent='Giao tử '+(o.arrange?'Bv':'BV'); o.gR.el.textContent='Giao tử '+(o.arrange?'bV':'bv'); }
-      o.gL.el.style.opacity=o.gR.el.style.opacity=e>.95?1:0;
-      o.main.material.uniforms.uOp.value=1-Math.min(1,e*1.6); o.kids.forEach(k=>k.material.uniforms.uOp.value=Math.max(0,(e-.35)/.65));
+      o.m=m; o.homs().forEach(([H,c])=>meioPose(H,m,c));
+      const nm=o.names(); o.gams.forEach((l,i)=>{ l.el.textContent=nm[i]; l.el.style.opacity=m>.97?1:0; });
+      const op=meioCellOp(m); o.main.material.uniforms.uOp.value=op.main;
+      o.kids.forEach(k=>k.material.uniforms.uOp.value=op.kid); o.grand.forEach(k=>k.material.uniforms.uOp.value=op.gam);
     });
     controls.update(); renderer.render(scene,camera);
     const w=host.clientWidth,h=host.clientHeight;
-    labels.forEach(l=>{ l.obj.getWorldPosition(v); v.project(camera); l.el.style.left=((v.x*.5+.5)*w+l.dx)+'px'; l.el.style.top=((-v.y*.5+.5)*h)+'px'; });
+    labels.forEach(l=>{ l.obj.getWorldPosition(v); v.project(camera); l.el.style.left=((v.x*.5+.5)*w+l.dx)+'px'; l.el.style.top=((-v.y*.5+.5)*h)+'px'; if(l.show) l.el.style.opacity=l.show()?1:0; });
   }
   raf=requestAnimationFrame(frame);
   return ()=>{ cancelAnimationFrame(raf); ro.disconnect(); renderer.dispose(); controls.dispose(); V.style.cssText=''; };
@@ -1160,7 +1254,7 @@ function mini3D(V, units, halfW, halfH){
 
 /* ============ 1d – Khái niệm ============ */
 function act1d(P, V){
-  const stop3d = mini3D(V,[{type:'link',title:'Cặp NST tương đồng của F1: B và V cùng nằm trên một NST'}],6.4,4.4);
+  const stop3d = mini3D(V,[{type:'link',title:'Cặp NST tương đồng của F1: B và V cùng nằm trên một NST'}],6.9,4.4);
   P.innerHTML = `
   <h2>Khái niệm di truyền liên kết</h2>
   <div class="card">
@@ -1175,9 +1269,9 @@ function act1d(P, V){
     <div class="fb" id="d-fb"></div>
   </div>
   <div class="kcard hide" id="d-box"><div class="kh"><span class="dot"></span>Khái niệm</div>
-    <p>Di truyền liên kết là hiện tượng các gene quy định các tính trạng cùng nằm trên một nhiễm sắc thể có xu hướng di truyền cùng nhau trong quá trình giảm phân.</p>
-    <p style="margin-top:6px"><b>Ptc → F1 → Fa:</b> 1 thân xám, cánh dài : 1 thân đen, cánh cụt.</p>
-    <p style="margin-top:6px">Di truyền liên kết hoàn toàn <b>làm hạn chế biến dị tổ hợp</b>.</p></div>`;
+    <p><b class="kwd">Di truyền liên kết</b> là hiện tượng các <b class="kwd">gene</b> quy định các tính trạng <b class="kwd">cùng nằm trên một nhiễm sắc thể</b> có xu hướng <b class="kwd">di truyền cùng nhau</b> trong quá trình <b class="kwd">giảm phân</b>.</p>
+    <p style="margin-top:6px"><b class="kwd">Ptc → F1 → Fa:</b> <b class="kwd">1</b> thân xám, cánh dài : <b class="kwd">1</b> thân đen, cánh cụt.</p>
+    <p style="margin-top:6px"><b class="kwd">Di truyền liên kết hoàn toàn</b> làm <b class="kwd">hạn chế biến dị tổ hợp</b>.</p></div>`;
   say('Từ thí nghiệm của Morgan, em hãy hoàn thành khái niệm: chọn từ thích hợp cho 3 chỗ trống rồi bấm <b>Kiểm tra</b>.','concept');
   const ans=['gene','nhiễm sắc thể','giảm phân'];
   $('#d-check').onclick=()=>{
@@ -1197,7 +1291,7 @@ function act1d(P, V){
 
 /* ============ 1e – So sánh hai quy luật ============ */
 function act1e(P, V){
-  const stop3d = mini3D(V,[{type:'link',y:4.2,title:'Liên kết gene: 1 cặp NST → 2 loại giao tử'},{type:'indep',y:-4.8,title:'Phân li độc lập: 2 cặp NST → 4 loại giao tử'}],6.4,10.2);
+  const stop3d = mini3D(V,[{type:'link',y:4.2,title:'Liên kết gene: 1 cặp NST → 2 loại giao tử'},{type:'indep',y:-4.8,title:'Phân li độc lập: 2 cặp NST → 4 loại giao tử'}],6.9,10.2);
   P.innerHTML = `
   <h2>So sánh liên kết gene và phân li độc lập</h2>
   <div class="card" id="e-card">
