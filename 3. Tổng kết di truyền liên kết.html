@@ -768,14 +768,14 @@
     }
 
     .nar .tx {
-      font-size: 14.5px;
+      font-size: 16.5px;
       line-height: 1.6;
       transition: font-size .4s
     }
 
     /* lời chốt hiện to khi phần Ghi nhớ chưa xuất hiện */
     .nar.big .tx {
-      font-size: 19px;
+      font-size: 21px;
       line-height: 1.65
     }
 
@@ -1228,16 +1228,16 @@
       border: 1.5px solid rgba(255, 255, 255, .35);
       color: #fff;
       border-radius: 12px;
-      padding: 8px 12px;
-      font-size: 13.5px;
-      line-height: 1.45;
+      padding: 10px 15px;
+      font-size: 17px;
+      line-height: 1.5;
       pointer-events: none
     }
 
     .cap3d small {
       display: block;
       opacity: .82;
-      font-size: 12px;
+      font-size: 14.5px;
       margin-top: 3px
     }
 
@@ -1285,7 +1285,7 @@
 
     .lbl.sum {
       text-align: center;
-      font-size: 12.5px;
+      font-size: 14.5px;
       font-weight: 600;
       background: rgba(255, 255, 255, .95);
       color: var(--ink);
@@ -1299,12 +1299,12 @@
         left: 50px;
         right: 50px;
         top: 52px;
-        font-size: 12px;
-        padding: 6px 10px
+        font-size: 14px;
+        padding: 7px 11px
       }
 
       .cap3d small {
-        font-size: 11px
+        font-size: 12.5px
       }
 
       .lbl.g {
@@ -1730,6 +1730,54 @@
       display: block
     }
 
+    /* ô thả thẻ nằm chồng lên ô lá của sơ đồ */
+    .mmwrap {
+      position: relative
+    }
+
+    .mslot {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      min-height: 0;
+      border: 0;
+      background: transparent;
+      border-radius: 10px
+    }
+
+    .mslot.hover {
+      background: rgba(47, 130, 125, .14);
+      box-shadow: 0 0 0 3px rgba(47, 130, 125, .35)
+    }
+
+    .mslot .dc {
+      width: 100%;
+      height: 100%;
+      padding: 0 6px;
+      font-size: clamp(11px, 1.15vw, 15.5px);
+      font-weight: 600;
+      line-height: 1.15;
+      border: 2px solid var(--bc);
+      border-radius: 10px;
+      box-shadow: none
+    }
+
+    .mslot.bad .dc {
+      border-color: var(--bad)
+    }
+
+    .mmhint {
+      margin: 0;
+      font-size: 16px
+    }
+
+    .mmtray .dc {
+      font-size: 16.5px;
+      padding: 10px 14px
+    }
+
     /* Ghi nhớ */
     .learn {
       display: flex;
@@ -1745,7 +1793,7 @@
 
     .learn p {
       margin: 4px 0 0;
-      font-size: 14.5px;
+      font-size: 16.5px;
       line-height: 1.6
     }
 
@@ -1771,7 +1819,7 @@
       border: 0;
       padding: 0;
       cursor: pointer;
-      font-size: 14.5px;
+      font-size: 16.5px;
       font-weight: 700;
       color: var(--muted)
     }
@@ -1862,8 +1910,6 @@
           <button class="stage-nav prev" id="btnPrev" type="button" aria-label="Bước trước">◀</button>
           <button class="stage-nav next" id="btnNext" type="button" aria-label="Bước sau">▶</button>
           <aside class="lesson" id="lesson">
-            <div class="lesson-head"><span>Bài học</span><button id="lessonToggle" type="button"
-                aria-label="Thu gọn / mở rộng nội dung">▾</button></div>
             <div class="sidebody" id="sidebody"></div>
           </aside>
         </div>
@@ -2092,14 +2138,13 @@
       muted = !muted; $('#btnNarr').setAttribute('aria-pressed', !muted);
       if (muted) { stopVoice(); lastEnd && lastEnd(); } else playVoice(lastKey);
     };
-    $('#lessonToggle').onclick = () => { const l = $('#lesson'); l.classList.toggle('collapsed'); $('#lessonToggle').textContent = l.classList.contains('collapsed') ? '▸' : '▾'; };
     $('#btnFull').onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); };
     $('#btnExplore').onclick = () => { $('#intro').classList.add('gone'); started = true; playVoice(lastKey, lastEnd); };
 
     /* ============ điều hướng ============ */
     const ACTS = [
       { id: 'note', name: 'Ghi nhớ', fn: act2d },
-      { id: 'map', name: 'Sơ đồ tư duy', fn: actMap, wide: true },
+      { id: 'map', name: 'Sơ đồ tư duy', fn: actMap },
     ];
     let cur = 0, unlocked = ACTS.length - 1, cleanup = null;   // không khoá bước: học sinh đi tự do giữa các bước
     const finished = new Set();
@@ -2657,16 +2702,24 @@
     <text x="470" y="232" text-anchor="middle" font-size="20" font-weight="800" fill="#fff">Di truyền liên kết</text>`;
       return s + '</svg>';
     }
+    // vị trí các ô lá trên sơ đồ (toạ độ viewBox 900 × 520), dùng để đặt ô thả thẻ chồng đúng lên sơ đồ
+    const MM_LEAF = {
+      b1: [0, 1, 2].map(i => [62, 150 + i * 55, 226]),
+      b2: [0, 1, 2, 3].map(i => [598, 140 + i * 52, 240]),
+      b3: [220, 450, 680].map(x => [x - 105, 446, 210]),
+    };
     function actMap(P, V) {
-      V.innerHTML = `<div class="vcard mm" id="e-mm"></div>`;
-      const slotsHTML = k => MM[k].items.map((_, i) => `<div class="slot" data-cell="${k}-${i}">Thả thẻ</div>`).join('');
+      const nar = $('#sidebody .nar'); if (nar) nar.remove();   // bước này không hiện khung lời cô giáo (voice vẫn đọc)
+      const pct = (v, t) => (v / t * 100).toFixed(3) + '%';
+      const leafSlots = ['b1', 'b2', 'b3'].map(k => MM_LEAF[k].map(([x, y, w], i) =>
+        `<div class="slot mslot" data-cell="${k}-${i}" style="left:${pct(x, 900)};top:${pct(y, 520)};width:${pct(w, 900)};height:${pct(38, 520)};--bc:${MM[k].color}"></div>`).join('')).join('');
+      V.innerHTML = `<div class="vcard mm"><div class="mmwrap"><div id="e-mm"></div>${leafSlots}</div></div>`;
       P.innerHTML = `
   <h2>Sơ đồ tư duy tổng kết bài học</h2>
   <div class="card" id="e-card">
     <span class="chip">Ghép thẻ</span><span class="counter" id="e-count">Đã ghép 0/10</span>
-    <p class="muted" style="margin:0;font-size:13.5px">Kéo các thẻ từ khoá vào đúng nhánh (hoặc chọn thẻ rồi chạm ô). Trong khay có 2 thẻ không thuộc nhánh nào.</p>
-    ${['b1', 'b2', 'b3'].map(k => `<div class="branch" style="border-color:${MM[k].color}55"><div class="bh" style="color:${MM[k].color}"><i style="background:${MM[k].color}"></i>${MM[k].title}</div><div class="bslots">${slotsHTML(k)}</div></div>`).join('')}
-    <div class="tray"></div>
+    <p class="muted mmhint">Kéo thẻ thả thẳng vào ô trống trên sơ đồ (hoặc chọn thẻ rồi chạm ô). Có 2 thẻ không thuộc nhánh nào.</p>
+    <div class="tray mmtray"></div>
     <div class="fb" id="e-fb"></div>
     <div><button class="qbtn hide" id="e-dl">Tải sơ đồ (PNG)</button><button class="qbtn alt hide" id="e-again">↺ Làm lại</button></div>
   </div>`;
@@ -2675,12 +2728,15 @@
       ['b1', 'b2', 'b3'].forEach(k => MM[k].items.forEach((t, i) => { const id = k + '_' + i; cards.push({ id, html: esc(t) }); branchOf[id] = k; textOf[id] = t; }));
       MM_X.forEach(x => { cards.push({ id: x.id, html: esc(x.text) }); textOf[x.id] = x.text; });
       const fb = $('#e-fb'), doneB = new Set();
+      const state = placed => { const st = { b1: [], b2: [], b3: [] };
+        ['b1', 'b2', 'b3'].forEach(k => MM[k].items.forEach((_, i) => { const id = placed[k + '-' + i]; st[k].push(id ? textOf[id] : null); })); return st; };
       function draw(placed) {
-        const st = { b1: [], b2: [], b3: [] };
-        ['b1', 'b2', 'b3'].forEach(k => MM[k].items.forEach((_, i) => { const id = placed[k + '-' + i]; st[k].push(id ? textOf[id] : null); }));
-        $('#e-mm').innerHTML = mmSVG(st);
+        const st = state(placed), blank = {};
+        Object.keys(st).forEach(k => blank[k] = st[k].map(t => t ? ' ' : null));
+        $('#e-mm').innerHTML = mmSVG(blank);
       }
-      const b = board($('#e-card'), cards, {}, n => {
+      // khu vực kéo thả gồm cả sơ đồ (ô thả) và khay thẻ ở bảng bài học
+      const b = board($('#stage'), cards, {}, n => {
         $('#e-count').textContent = `Đã ghép ${n}/10`;
         draw(b.placed);
         ['b1', 'b2', 'b3'].forEach(k => {
@@ -2706,7 +2762,7 @@
       draw({});
       $('#e-again').onclick = () => go(1);
       $('#e-dl').onclick = () => {
-        const svg = $('#e-mm svg').outerHTML.replace('<svg ', '<svg width="1800" height="1040" ');
+        const svg = mmSVG(state(b.placed)).replace('<svg ', '<svg width="1800" height="1040" ');
         const img = new Image();
         img.onload = () => {
           const c = document.createElement('canvas'); c.width = 1800; c.height = 1040;

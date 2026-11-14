@@ -59,7 +59,7 @@ let i=0, wrongOnce=false, firstTry=[];
 function render(){
   if(i>=Q.length) return done();
   const q=Q[i]; wrongOnce=false;
-  card.innerHTML=`<div class="top"><span class="chip">Luyện tập</span><span class="chip lv">${q.level}</span><span class="count">Câu ${i+1} / ${Q.length}</span></div>
+  card.innerHTML=`<div class="top"><span class="chip lv">${q.level}</span><span class="count">Câu ${i+1} / ${Q.length}</span></div>
   <div class="bar"><span style="width:${i/Q.length*100}%"></span></div>
   <p class="q"></p><div class="opts" id="opts"></div><div class="fb" id="fb"></div>
   <div class="row"><button class="btn" id="next" hidden>${i===Q.length-1?'Xem kết quả':'Câu sau'}</button></div>`;

@@ -54,7 +54,7 @@ button{font-family:inherit}
 @keyframes nudgePulse{0%,100%{box-shadow:0 0 0 0 rgba(25,88,86,.55)}50%{box-shadow:0 0 0 9px rgba(25,88,86,0)}}
 
 /* vùng hình ảnh trên sân khấu */
-.vis{position:absolute;z-index:2;left:62px;top:56px;bottom:12px;right:calc(min(540px,46%) + 72px);display:flex;flex-direction:column;gap:10px;overflow:auto;scrollbar-width:thin}
+.vis{position:absolute;z-index:2;left:62px;top:56px;bottom:12px;right:calc(min(660px,54%) + 72px);display:flex;flex-direction:column;gap:10px;overflow:auto;scrollbar-width:thin}
 .vcard{background:rgba(255,255,255,.94);border-radius:var(--r);box-shadow:var(--sh-3);padding:12px 14px}
 .vcard h4{margin:0 0 6px;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-light)}
 .vrow{display:flex;gap:10px;flex-wrap:wrap}
@@ -63,7 +63,7 @@ button{font-family:inherit}
 .v3d canvas{display:block;width:100%;height:100%}
 
 /* bảng bài học */
-.lesson{position:absolute;z-index:7;right:60px;top:12px;bottom:12px;width:min(540px,46%);display:flex;flex-direction:column;background:rgba(255,255,255,.94);backdrop-filter:blur(12px) saturate(1.3);border-radius:var(--r);box-shadow:var(--sh-3);overflow:hidden}
+.lesson{position:absolute;z-index:7;right:60px;top:12px;bottom:12px;width:min(660px,54%);display:flex;flex-direction:column;background:rgba(255,255,255,.94);backdrop-filter:blur(12px) saturate(1.3);border-radius:var(--r);box-shadow:var(--sh-3);overflow:hidden}
 .lesson-head{display:flex;align-items:center;gap:8px;padding:8px 10px 8px 16px;border-bottom:1px solid var(--line);font-size:12px;font-weight:700;color:var(--brand-dark);letter-spacing:.04em;text-transform:uppercase;flex:0 0 auto}
 .lesson-head span{flex:1}
 .lesson-head button{width:28px;height:28px;border-radius:99px;border:none;background:var(--brand-soft);color:var(--brand-dark);cursor:pointer;font-size:13px}
@@ -73,26 +73,47 @@ button{font-family:inherit}
 .sec{animation:fade .3s ease}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-light);margin:0 0 4px}
-.sec h2{margin:0 0 8px;font-size:21px;line-height:1.3;color:var(--brand-dark)}
-.lead{font-size:15px;line-height:1.65;margin:8px 0}
+.sec h2{margin:0 0 8px;font-size:24px;line-height:1.3;color:var(--brand-dark)}
+.lead{font-size:17px;line-height:1.6;margin:8px 0}
 .muted{color:var(--muted)}
 .chip{display:inline-block;font-size:12px;font-weight:700;color:var(--brand);background:var(--brand-soft);border-radius:99px;padding:3px 11px;margin-bottom:6px}
 .counter{display:inline-block;font-size:12px;font-weight:700;color:#6b4d13;background:#fff6dd;border:1px solid #f0dca6;border-radius:99px;padding:3px 11px;margin:0 0 6px 6px}
 .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh-1);padding:14px 16px;margin:12px 0}
-.card h3{margin:0 0 6px;font-size:16px;color:var(--brand-dark)}
+.card h3{margin:0 0 6px;font-size:18px;color:var(--brand-dark)}
+.card p{font-size:16.5px;line-height:1.55}
 .kcard{border-radius:var(--r-sm);padding:12px 14px;margin-top:10px;border:1.5px solid var(--line);background:#fff;box-shadow:var(--sh-1)}
 .kcard .kh{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--brand);border-radius:99px;padding:4px 12px 4px 9px;margin-bottom:8px}
 .kcard .dot{width:8px;height:8px;border-radius:50%;background:#fff;flex:0 0 auto}
 .kcard.cap .kh{background:#8a4795}
-.kcard p{margin:0;font-size:14.5px;line-height:1.6}
-.kcard ul{margin:2px 0 0;padding-left:20px;font-size:14.5px;line-height:1.6}
+.kcard p{margin:0;font-size:16.5px;line-height:1.6}
+.kcard ul{margin:2px 0 0;padding-left:20px;font-size:16.5px;line-height:1.6}
 .checks{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .check{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:var(--r-sm);border:1.5px dashed #cdbd9f;background:#fffaef;font-weight:600;font-size:14.5px}
 .check b{flex:0 0 24px;height:24px;border-radius:50%;background:#fff;border:2px solid #cdbd9f;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px}
 .check.done{border-style:solid;border-color:var(--ok);background:#eef7e9;color:#3f6b32}
 .check.done b{background:var(--ok);border-color:var(--ok)}
+.next-wrap{margin:16px 0 4px;display:flex;justify-content:flex-end}
+.next-btn{margin:0;font-size:16.5px;padding:12px 22px;box-shadow:0 6px 16px -6px rgba(25,88,86,.6);animation:nextIn .45s ease both,nudgePulse 1.4s ease 0.5s infinite}
+@keyframes nextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card-out{animation:cardOut .38s ease forwards}
+.card-in{animation:cardIn .45s ease both}
+@keyframes cardOut{to{opacity:0;transform:translateX(-40px);max-height:0;margin:0;padding-top:0;padding-bottom:0}}
+@keyframes cardIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+/* thanh nhiệm vụ dạng tiến trình ngang: vòng tròn số nối bằng đường kẻ, xong thì hiện ✓ và đường kẻ chuyển xanh */
+.checks.prog{flex-direction:row;gap:0;counter-reset:pg;margin-top:12px}
+.checks.prog .check{counter-increment:pg;flex:1 1 0;min-width:0;position:relative;flex-direction:column;gap:6px;padding:0 4px;border:0;background:none;text-align:center;font-size:15px;font-weight:600;color:var(--muted);line-height:1.3}
+.checks.prog .check b{position:relative;z-index:1;flex:0 0 auto;width:30px;height:30px;font-size:0;color:#a08f6c;border-color:#cdbd9f}
+.checks.prog .check b::before{content:counter(pg);font-size:13px;font-weight:700}
+.checks.prog .check+.check::before{content:'';position:absolute;top:14px;right:calc(50% + 15px);width:calc(100% - 30px);height:3px;border-radius:3px;background:#e6dcc8}
+.checks.prog .check.done{color:#3f6b32;background:none}
+.checks.prog .check.done b{font-size:15px;color:#fff}
+.checks.prog .check.done b::before{content:none}
+.checks.prog .check.done+.check::before,.checks.prog .check.done+.check.done::before{background:var(--ok)}
+/* bước đang làm: bước đầu tiên chưa xong */
+.checks.prog .check:not(.done):first-child,.checks.prog .check.done+.check:not(.done){color:var(--brand-dark)}
+.checks.prog .check:not(.done):first-child b,.checks.prog .check.done+.check:not(.done) b{border-color:var(--brand);color:var(--brand);box-shadow:0 0 0 4px rgba(25,88,86,.14)}
 .opts{display:flex;flex-direction:column;gap:8px;margin:10px 0 0}
-.opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:11px 13px;border-radius:var(--r-sm);border:1.5px solid var(--line);background:#fff;color:var(--ink);font-size:14.5px;cursor:pointer;transition:border-color .15s,background .15s}
+.opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:11px 13px;border-radius:var(--r-sm);border:1.5px solid var(--line);background:#fff;color:var(--ink);font-size:16.5px;cursor:pointer;transition:border-color .15s,background .15s}
 .opt i{font-style:normal;flex:0 0 24px;height:24px;border-radius:50%;background:var(--brand-soft);color:var(--brand);font-weight:700;font-size:12.5px;display:flex;align-items:center;justify-content:center}
 .opt:hover:not(:disabled){border-color:var(--brand-light);background:var(--stage-mid)}
 .opt:disabled{cursor:default}
@@ -111,12 +132,12 @@ button{font-family:inherit}
 .opt.no i.cb::before{content:'✕';font-size:13px}
 .opt.part{border-color:#e08a2c;background:#fdf0e1;color:#8a4a10}
 .opt.part i.cb{background:#e08a2c;border-color:#e08a2c;color:#fff}
-.fb{display:none;margin:9px 0 0;padding:10px 13px;border-radius:var(--r-sm);font-size:14px;line-height:1.6}
+.fb{display:none;margin:9px 0 0;padding:10px 13px;border-radius:var(--r-sm);font-size:16px;line-height:1.6}
 .fb.show{display:block}
 .fb.ok{background:var(--brand-soft);color:var(--brand-dark)}
 .fb.no{background:#fbeae4;color:#a54527}
 .fb.info{background:#fff6dd;color:#6b4d13}
-.qbtn{border:0;border-radius:11px;padding:10px 18px;font-size:14.5px;font-weight:600;cursor:pointer;background:var(--brand);color:#fff;margin:10px 8px 0 0}
+.qbtn{border:0;border-radius:11px;padding:11px 20px;font-size:16px;font-weight:600;cursor:pointer;background:var(--brand);color:#fff;margin:10px 8px 0 0}
 .qbtn:hover:not(:disabled){background:var(--brand-dark)}
 .qbtn:disabled{opacity:.4;cursor:not-allowed}
 .qbtn.alt{background:#fff;color:var(--brand);border:1.5px solid var(--brand)}
@@ -124,7 +145,7 @@ button{font-family:inherit}
 .qbtn.nudge{animation:nudgePulse 1.2s ease infinite}
 a.qbtn{display:inline-block;text-decoration:none}
 .seg{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.seg button{border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:7px 14px;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer}
+.seg button{border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:7px 14px;font-size:15.5px;font-weight:600;color:var(--ink);cursor:pointer}
 .seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
 .seg button:disabled{opacity:.4;cursor:not-allowed}
 .seg button.nudge{animation:nudgePulse 1.2s ease infinite}
@@ -132,7 +153,7 @@ a.qbtn{display:inline-block;text-decoration:none}
 /* lời cô giáo */
 .nar{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-left:4px solid var(--brand-light);border-radius:var(--r-sm);padding:10px 12px;margin:0 0 12px;box-shadow:var(--sh-1)}
 .nar .av{flex:0 0 30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
-.nar .tx{font-size:14.5px;line-height:1.6}
+.nar .tx{font-size:16.5px;line-height:1.6}
 
 /* ruồi giấm */
 .fly{display:inline-flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--muted);text-align:center;line-height:1.25}
@@ -155,16 +176,18 @@ a.qbtn{display:inline-block;text-decoration:none}
 .slot .dc{box-shadow:none;border:0;background:transparent}
 .slots2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .count{font-size:13px;color:var(--muted);font-weight:500}
-table.cmp{border-collapse:separate;border-spacing:5px;width:100%;margin-top:6px}
-table.cmp th{font-size:12.5px;padding:7px 8px;border-radius:9px;color:#fff;font-weight:700}
+table.cmp{border-collapse:separate;border-spacing:8px;width:100%;margin-top:10px}
+table.cmp th{font-size:16.5px;padding:12px 12px;border-radius:11px;color:#fff;font-weight:700;line-height:1.35}
 table.cmp th.rl{background:var(--brand-soft);color:var(--brand-dark);text-align:left;width:27%}
 table.cmp th.a{background:var(--blue)}table.cmp th.b{background:var(--orange)}
-table.cmp td.slot{width:36.5%;display:table-cell;vertical-align:middle;text-align:center}
+table.cmp td.slot{width:36.5%;display:table-cell;vertical-align:middle;text-align:center;height:96px;font-size:16px}
+#e-card .dc{font-size:16px;padding:10px 14px}
+#e-card .tray{min-height:120px}
 table.cmp td.slot .dc{display:flex;width:100%}
 /* bước cần khung bài học rộng (nửa màn hình) */
 @media (min-width:901px){
-  .stage.wide .lesson{width:50%}
-  .stage.wide .vis{right:calc(50% + 72px)}
+  .stage.wide .lesson{width:58%}
+  .stage.wide .vis{right:calc(58% + 72px)}
 }
 
 /* sơ đồ thí nghiệm */
@@ -194,6 +217,11 @@ table.cmp td.slot .dc{display:flex;width:100%}
 .tagbtn:hover{background:#fff4e4}
 .tagbtn.done{background:#eef7e9;border-color:var(--ok);color:#3f6b32}
 .tagbtn.cap{cursor:default;pointer-events:none;background:rgba(255,255,255,.92);border-color:var(--line);color:var(--brand-dark);font-size:13px}
+/* nhãn còn chờ bấm: viền sáng nhấp nháy + bàn tay nhỏ chỉ vào để gợi ý em chạm */
+.tagbtn:not(.done):not(.cap){animation:tagPulse 1.4s ease-in-out infinite;border-color:#f0a24a}
+.tagbtn:not(.done):not(.cap)::after{content:"👆";position:absolute;right:-14px;bottom:-20px;font-size:22px;pointer-events:none;animation:tagTap 1.4s ease-in-out infinite;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+@keyframes tagPulse{0%,100%{box-shadow:var(--sh-3),0 0 0 0 rgba(255,190,90,.75)}50%{box-shadow:var(--sh-3),0 0 0 10px rgba(255,190,90,0)}}
+@keyframes tagTap{0%,100%{transform:translate(0,0) rotate(-12deg)}50%{transform:translate(-5px,-6px) rotate(-12deg)}}
 
 /* khái niệm */
 .concept{font-size:17px;line-height:2.3}
@@ -208,7 +236,7 @@ table.cmp td.slot .dc{display:flex;width:100%}
 .kw{display:flex;gap:8px;align-items:center;background:var(--stage-mid);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:6px 6px 6px 12px;font-weight:600}
 .kw span{flex:1}
 .kw .qbtn{margin:0;padding:6px 12px;font-size:13px}
-ol.s3{padding-left:20px;margin:8px 0;font-size:14.5px}
+ol.s3{padding-left:20px;margin:8px 0;font-size:16.5px}
 
 /* thanh bước */
 .steps{display:flex;gap:8px;padding:10px 12px;overflow-x:auto;overflow-y:hidden;border-top:1px solid var(--line);scrollbar-width:none;flex:0 0 auto}
@@ -288,7 +316,6 @@ ol.s3{padding-left:20px;margin:8px 0;font-size:14.5px}
         <button class="stage-nav prev" id="btnPrev" type="button" aria-label="Bước trước">◀</button>
         <button class="stage-nav next" id="btnNext" type="button" aria-label="Bước sau">▶</button>
         <aside class="lesson" id="lesson">
-          <div class="lesson-head"><span>Bài học</span><button id="lessonToggle" type="button" aria-label="Thu gọn / mở rộng nội dung">▾</button></div>
           <div class="sidebody" id="sidebody"></div>
         </aside>
       </div>
@@ -548,7 +575,6 @@ function say(text,key){
 const narrHTML = ``;   // không hiện khung lời cô giáo; lời thuyết minh chỉ phát bằng voice
 $('#btnNarr').setAttribute('aria-pressed','true');
 $('#btnNarr').onclick=()=>{ muted=!muted; $('#btnNarr').setAttribute('aria-pressed',!muted); if(muted) stopVoice(); else playVoice(lastKey); };
-$('#lessonToggle').onclick=()=>{ const l=$('#lesson'); l.classList.toggle('collapsed'); $('#lessonToggle').textContent=l.classList.contains('collapsed')?'▸':'▾'; };
 $('#btnFull').onclick=()=>{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); };
 $('#btnExplore').onclick=()=>{ $('#intro').classList.add('gone'); started=true; playVoice(lastKey); };
 
@@ -569,7 +595,15 @@ function buildSteps(){
   $('#btnNext').classList.toggle('nudge', finished.has(cur) && cur<ACTS.length-1);
 }
 const finished=new Set();
-function unlock(i){ finished.add(i-1); buildSteps(); }   // gọi khi hoàn thành hoạt động i-1: đánh dấu xong, nút ▶ nhấp nháy
+// xong một bước: hiện nút "Tiếp tục" ở cuối nội dung bài học để sang bước sau
+function showNext(){
+  const pc=$('#pc'); if(!pc || cur>=ACTS.length-1 || $('#nextStep')) return;
+  const w=document.createElement('div'); w.className='next-wrap';
+  w.innerHTML=`<button class="qbtn next-btn" id="nextStep" type="button">Tiếp tục: ${ACTS[cur+1].name} →</button>`;
+  pc.appendChild(w); $('#nextStep').onclick=()=>go(cur+1);
+  setTimeout(()=>w.scrollIntoView({behavior:'smooth',block:'nearest'}),600);
+}
+function unlock(i){ finished.add(i-1); buildSteps(); if(i-1===cur) showNext(); }   // gọi khi hoàn thành hoạt động i-1: đánh dấu xong, nút ▶ nhấp nháy
 function go(i){
   if(cleanup){cleanup(); cleanup=null;}
   stopVoice();
@@ -579,10 +613,18 @@ function go(i){
   $('#vis').innerHTML=''; $('#vis').className='vis'; $('#vis').style.cssText='';
   const sb=$('#sidebody'); sb.innerHTML=`<section class="sec">${narrHTML}<div id="pc"></div></section>`; sb.scrollTop=0;
   cleanup = ACTS[i].fn($('#pc'), $('#vis'))||null;
+  if(finished.has(i)) showNext();   // quay lại bước đã xong: vẫn có nút đi tiếp
   buildSteps();
 }
 $('#btnPrev').onclick=()=>go(cur-1);
 $('#btnNext').onclick=()=>{ if(cur<ACTS.length-1) go(cur+1); };
+
+// xong một phần: chờ em đọc phản hồi, khung phần cũ trượt ra rồi ẩn, khung phần mới trượt vào (dùng cho bước 1 và 2)
+function swapCard(from,to,wait=2200){ return setTimeout(()=>{ const a=$(from), b=$(to); if(!a||!b||!document.body.contains(a)) return;
+    a.classList.add('card-out');
+    setTimeout(()=>{ a.classList.add('hide'); a.classList.remove('card-out'); b.classList.remove('hide'); b.classList.add('card-in');
+      $('#sidebody').scrollTo({top:0,behavior:'smooth'}); setTimeout(()=>b.classList.remove('card-in'),500); },380);
+  },wait); }
 
 /* ============ 1a – Thí nghiệm của Morgan (cảnh 3D ruồi giấm) ============ */
 // Cánh ruồi giấm thật: thuôn, gốc hẹp, đầu tròn, có các gân dọc L1–L5 và hai gân ngang. Gốc cánh tại (0,0), đầu cánh hướng −x.
@@ -642,17 +684,17 @@ function act1a(P, V){
   V.innerHTML=`<div class="hud" id="a-hud">Kéo để xoay · cuộn để phóng to</div>`;
   P.innerHTML = `
   <h2>Thí nghiệm của Morgan</h2>
-  <p class="lead">Morgan lai hai dòng ruồi giấm <b>thuần chủng</b>, khác nhau về hai đặc điểm. Em làm lại thí nghiệm theo 3 phần nhé.</p>
-  <div class="checks"><div class="check" id="ak1"><b>✓</b>1. Quan sát P</div><div class="check" id="ak2"><b>✓</b>2. Tạo F1</div><div class="check" id="ak3"><b>✓</b>3. Lai phân tích</div></div>
+  <p class="lead">Morgan lai hai dòng ruồi giấm <b>thuần chủng</b> khác nhau về hai tính trạng.</p>
+  <div class="checks prog"><div class="check" id="ak1"><b>✓</b>Quan sát P</div><div class="check" id="ak2"><b>✓</b>Tạo F1</div><div class="check" id="ak3"><b>✓</b>Lai phân tích</div></div>
   <div class="card" id="a-c1"><span class="chip">Phần 1</span><h3>Quan sát ruồi bố mẹ (P)</h3>
-    <p class="muted" style="margin:0;font-size:13.5px">Xoay mô hình 3D để quan sát hai con ruồi P. Chúng khác nhau ở những điểm nào?</p>
+    <p class="muted" style="margin:0;font-size:15.5px">Xoay mô hình 3D, so sánh hai con ruồi P.</p>
     <div id="a-q1" style="margin-top:8px"></div></div>
   <div class="card hide" id="a-c2"><span class="chip">Phần 2</span><h3>Lai P → F1</h3>
-    <p class="muted" style="margin:0;font-size:13.5px">Cho ruồi thân xám, cánh dài lai với ruồi thân đen, cánh cụt.</p>
+    <p class="muted" style="margin:0;font-size:15.5px">Cho ruồi thân xám, cánh dài lai với ruồi thân đen, cánh cụt.</p>
     <div><button class="qbtn" id="a-cross1">▶ Cho lai P</button></div>
     <div id="a-q2" style="margin-top:8px"></div></div>
   <div class="card hide" id="a-c3"><span class="chip">Phần 3</span><h3>Lai phân tích</h3>
-    <p style="margin:0;font-size:13.5px"><b>Lai phân tích</b> là cho cơ thể mang tính trạng trội (<b>ruồi đực F1</b>) lai với cơ thể mang tính trạng lặn (<b>ruồi cái thân đen, cánh cụt</b>) để xem F1 tạo ra những loại giao tử nào.</p>
+    <p style="margin:0;font-size:15.5px"><b>Lai phân tích</b> là cho cơ thể mang tính trạng trội (<b>ruồi đực F1</b>) lai với cơ thể mang tính trạng lặn (<b>ruồi cái thân đen, cánh cụt</b>) để xem F1 tạo ra những loại giao tử nào.</p>
     <div><button class="qbtn" id="a-cross2">▶ Lai phân tích</button></div>
     <div id="a-out"></div></div>
   <div class="kcard hide" id="a-sum"><div class="kh"><span class="dot"></span>Tóm tắt thí nghiệm</div>
@@ -673,7 +715,7 @@ function act1a(P, V){
     ok:'Gồm tính trạng <b>màu sắc thân</b> (thân xám, thân đen) và tính trạng <b>kích thước cánh</b> (cánh dài, cánh cụt). Mắt của hai con đều đỏ nên màu mắt không phải tính trạng đang xét.',
     bad:'Chưa đúng rồi, em xoay mô hình và so sánh kĩ hai con ruồi nhé.',
     hint:'một con thân xám, con kia thân đen; một con cánh dài, con kia cánh cụt. Mắt của chúng có khác nhau không?',
-    onDone:()=>{ $('#ak1').classList.add('done'); reveal('#a-c2'); say('Bây giờ em bấm <b>“Cho lai P”</b> để xem đời con F1 nhé.','pCross'); }});
+    onDone:()=>{ $('#ak1').classList.add('done'); swapCard('#a-c1','#a-c2'); say('Bây giờ em bấm <b>“Cho lai P”</b> để xem đời con F1 nhé.','pCross'); }});
 
   $('#a-cross1').onclick=()=>{
     $('#a-cross1').disabled=true;
@@ -683,7 +725,7 @@ function act1a(P, V){
         opts:['Thân xám và cánh dài','Thân đen và cánh cụt','Chưa xác định được'],correct:[0],
         ok:'F1 chỉ biểu hiện thân xám, cánh dài nên đó là <b>tính trạng trội</b>; thân đen, cánh cụt là <b>tính trạng lặn</b>.',
         bad:'Chưa đúng rồi, em nhìn lại các con ruồi F1 nhé.',hint:'tính trạng biểu hiện ở F1 khi lai hai dòng thuần chủng là tính trạng trội.',
-        onDone:()=>{ $('#ak2').classList.add('done'); reveal('#a-c3');
+        onDone:()=>{ $('#ak2').classList.add('done'); swapCard('#a-c2','#a-c3');
           say('Morgan tiếp tục làm phép <b>lai phân tích</b>: cho ruồi đực F1 lai với ruồi cái thân đen, cánh cụt. Em bấm <b>“Lai phân tích”</b> nhé.','lp'); }});
       setTimeout(()=>$('#a-q2').scrollIntoView({behavior:'smooth',block:'nearest'}),300);
     };
@@ -726,7 +768,7 @@ function stage3D(V){
   // ruồi "bóng mờ": kiểu hình dự đoán nhưng không xuất hiện
   function ghost(f,op=.24){ f.traverse(o=>{ if(o.material){ o.material=o.material.clone(); o.material.transparent=true; o.material.opacity=Math.min(o.material.opacity??1,op); o.material.depthWrite=false; } }); }
   let view={hw:4.2,hh:2.4}, camT=null;
-  const shiftPx=()=>innerWidth<=900?0:Math.min(540,host.clientWidth*.46)+72;
+  const shiftPx=()=>innerWidth<=900?0:Math.min(660,host.clientWidth*.54)+72;
   function camPos(){ const w=host.clientWidth||800,h=host.clientHeight||600, wide=innerWidth>900, lw=Math.max(220,w-shiftPx()), lh=wide?h:h*.5-16;
     const d=Math.max(view.hw/(0.4142*lw/h),view.hh/(0.4142*lh/h))*1.08; return new THREE.Vector3(0,.62*d,.79*d); }
   function frameTo(hw,hh){ view={hw,hh}; camT={t:0,from:camera.position.clone(),to:camPos()}; }
@@ -815,13 +857,13 @@ function act1b(P, V){
   const B=start3D(V), C=B?compareStage(B):null; C&&C.showCross();
   P.innerHTML = `
   <h2>Nếu theo quy luật của Mendel thì sao?</h2>
-  <p class="lead">Em đóng vai nhà khoa học: dự đoán kết quả, rồi so với kết quả thật của Morgan.</p>
-  <div class="checks"><div class="check" id="bk1"><b>✓</b>1. Dự đoán</div><div class="check" id="bk2"><b>✓</b>2. Đối chiếu</div><div class="check" id="bk3"><b>✓</b>3. Nhận xét</div></div>
+  <p class="lead">Dự đoán theo Mendel, rồi so với kết quả thật của Morgan.</p>
+  <div class="checks prog"><div class="check" id="bk1"><b>✓</b>Dự đoán</div><div class="check" id="bk2"><b>✓</b>Đối chiếu</div><div class="check" id="bk3"><b>✓</b>Nhận xét</div></div>
   <div class="card" id="b-q1"></div>
   <div class="card hide" id="b-q2"></div>
   <div class="card hide" id="b-q3"></div>`;
   say('Theo Mendel, các tính trạng di truyền <b>riêng rẽ</b>: màu thân không phụ thuộc vào độ dài cánh. Nếu đúng như vậy, khi lai phân tích ruồi F1, màu thân (xám hoặc đen) có thể kết hợp tự do với kiểu cánh (dài hoặc cụt). Em hãy dự đoán: đời Fa sẽ có mấy kiểu hình?','mendel');
-  const next=(id)=>{ const c=$(id); c.classList.remove('hide'); setTimeout(()=>c.scrollIntoView({behavior:'smooth',block:'nearest'}),300); return c; };
+  const next=(from,id)=>{ swapCard(from,id); return $(id); };   // dựng câu hỏi sẵn trong khung mới, chuyển khung sau khi em đọc phản hồi
   quiz($('#b-q1'),{q:'<b>Phần 1 – Dự đoán.</b> Nếu màu thân và kiểu cánh di truyền riêng rẽ (theo Mendel), đời Fa sẽ có mấy kiểu hình?',
     opts:['2 kiểu hình','3 kiểu hình','4 kiểu hình, tỉ lệ 1 : 1 : 1 : 1'],correct:[2],
     ok:'2 màu thân × 2 kiểu cánh = <b>4 kiểu hình</b>: xám–dài, xám–cụt, đen–dài, đen–cụt, mỗi loại chiếm 1 phần.',
@@ -830,7 +872,7 @@ function act1b(P, V){
     onDone:()=>{
       $('#bk1').classList.add('done'); C&&C.showPred();
       say('Đúng vậy! Theo Mendel sẽ có <b>4 kiểu hình</b>, trong đó có hai kiểu mới là thân xám, cánh cụt và thân đen, cánh dài. Bây giờ em so sánh với kết quả thật của Morgan: kiểu hình nào <b>không xuất hiện</b>?','mendelB');
-      quiz(next('#b-q2'),{multi:true,q:'<b>Phần 2 – Đối chiếu.</b> Morgan chỉ thu được ruồi thân xám, cánh dài và ruồi thân đen, cánh cụt. Kiểu hình nào trong dự đoán <b>không xuất hiện</b>? (chọn 2)',
+      quiz(next('#b-q1','#b-q2'),{multi:true,q:'<b>Phần 2 – Đối chiếu.</b> Morgan chỉ thu được ruồi thân xám, cánh dài và ruồi thân đen, cánh cụt. Kiểu hình nào trong dự đoán <b>không xuất hiện</b>? (chọn 2)',
         opts:['Thân xám, cánh dài','Thân xám, cánh cụt','Thân đen, cánh dài','Thân đen, cánh cụt'],correct:[1,2],
         ok:'Hai kiểu hình mới <b>thân xám, cánh cụt</b> và <b>thân đen, cánh dài</b> không xuất hiện. Thực tế chỉ có 2 kiểu hình, tỉ lệ 1 : 1 – <b>khác với dự đoán của Mendel</b>.',
         bad:'Chưa đúng rồi, em đọc lại kết quả của Morgan trong câu hỏi nhé: Fa chỉ có hai loại ruồi.',
@@ -839,7 +881,7 @@ function act1b(P, V){
           $('#bk2').classList.add('done');
           C&&C.showReal();
           say('Em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?','q3');
-          quiz(next('#b-q3'),{q:'<b>Phần 3 – Nhận xét.</b> Em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?',
+          quiz(next('#b-q2','#b-q3'),{q:'<b>Phần 3 – Nhận xét.</b> Em có nhận xét gì về sự di truyền của hai tính trạng trong phép lai trên?',
             opts:['Thân xám luôn đi cùng cánh dài, thân đen luôn đi cùng cánh cụt: hai tính trạng di truyền cùng nhau','Thân xám luôn đi cùng cánh cụt','Hai tính trạng di truyền riêng rẽ, đúng như Mendel'],correct:[0],
             ok:'Thân xám luôn di truyền cùng cánh dài, thân đen luôn di truyền cùng cánh cụt. Hai tính trạng <b>không phân li độc lập</b> mà di truyền cùng nhau. Vì sao lại như vậy?',
             bad:'Chưa đúng rồi, em nhìn lại hai nhóm ruồi ở thế hệ Fa nhé.',hint:'hãy nhìn lại hai nhóm ruồi ở thế hệ Fa: tính trạng nào luôn đi cùng nhau?',
@@ -915,7 +957,7 @@ function act1c(P, V){
   <h2>Giải thích thí nghiệm: giảm phân của F1</h2>
   <div class="card">
     <span class="chip">Nhiệm vụ</span><span class="counter" id="cnt">Đã khám phá 0/2</span>
-    <p style="margin:6px 0 0;font-size:13.5px" class="muted">Quy ước: <b>B</b> thân xám, <b>b</b> thân đen; <b>V</b> cánh dài, <b>v</b> cánh cụt. Chạm nhãn trên mô hình 3D theo thứ tự:</p>
+    <p style="margin:6px 0 0;font-size:15.5px" class="muted">Quy ước: <b>B</b> thân xám, <b>b</b> thân đen; <b>V</b> cánh dài, <b>v</b> cánh cụt. Chạm nhãn trên mô hình 3D theo thứ tự:</p>
     <div class="checks"><div class="check" id="ck1"><b>✓</b>Cặp NST tương đồng của F1</div><div class="check" id="ck2"><b>✓</b>Hai cặp gene Bb, Vv</div></div>
   </div>
   <div class="card"><span class="chip">Hoạt ảnh</span>
@@ -1095,7 +1137,7 @@ function act1c(P, V){
   $('#c-slow').onclick=()=>{ slow=!slow; upd(); };
   $('#c-fert').onclick=()=>{
     fertDone=true; upd();
-    $('#c-out').innerHTML=`<p class="muted" style="margin:10px 0 0;font-size:13.5px"><b>Thụ tinh:</b> giao tử BV hoặc bv của ruồi đực F1 × giao tử bv của ruồi cái.</p>
+    $('#c-out').innerHTML=`<p class="muted" style="margin:10px 0 0;font-size:15.5px"><b>Thụ tinh:</b> giao tử BV hoặc bv của ruồi đực F1 × giao tử bv của ruồi cái.</p>
       <div class="zy"><div>${F_XD(true,'sm')}<b>BV/bv</b><div class="count">thân xám, cánh dài</div></div>
       <div>${F_DC(true,'sm')}<b>bv/bv</b><div class="count">thân đen, cánh cụt</div></div></div>
       <div class="bar"><span style="width:50%;background:#7b8791">1</span><span style="width:50%;background:#2b2b2b">1</span></div>
@@ -1117,7 +1159,7 @@ function act1c(P, V){
       bad:'Chưa đúng rồi, em xem lại hoạt ảnh giảm phân nhé.',hint:'hãy nhìn vị trí của hai cặp gene Bb và Vv trên NST.',onDone:()=>unlock(3)});
   }
   function indepOut(){
-    $('#c-out').innerHTML=`<p class="muted" style="margin:10px 0 0;font-size:13.5px"><b>F1 cho 4 loại giao tử (phân li độc lập):</b></p><div><span class="chip2">BV</span><span class="chip2">Bv</span><span class="chip2">bV</span><span class="chip2">bv</span></div>
+    $('#c-out').innerHTML=`<p class="muted" style="margin:10px 0 0;font-size:15.5px"><b>F1 cho 4 loại giao tử (phân li độc lập):</b></p><div><span class="chip2">BV</span><span class="chip2">Bv</span><span class="chip2">bV</span><span class="chip2">bv</span></div>
     <p class="count" style="margin:6px 0 0">Mỗi tế bào giảm phân cho 4 giao tử thuộc 2 loại, tuỳ cách các NST kép sắp xếp ở giảm phân I (BV | bv hoặc Bv | bV). Xét nhiều tế bào thì có đủ 4 loại giao tử. Bấm “Xem lại” để thấy cách sắp xếp khác.</p>`;
   }
   const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
@@ -1159,9 +1201,9 @@ function act1c(P, V){
     lineSvg.innerHTML=svg;
   }
   // lệch khung hình sang trái để mô hình nằm ngoài vùng bảng bài học (màn rộng)
-  function applyOffset(){ const w=host.clientWidth,h=host.clientHeight; if(!w||!h) return; const wide=innerWidth>900; const shift = wide ? Math.min(540,w*.46)+72 : 0; const vs = wide ? 0 : (h*.5+16)/2; camera.setViewOffset(w,h,shift/2,vs,w,h); }
+  function applyOffset(){ const w=host.clientWidth,h=host.clientHeight; if(!w||!h) return; const wide=innerWidth>900; const shift = wide ? Math.min(660,w*.54)+72 : 0; const vs = wide ? 0 : (h*.5+16)/2; camera.setViewOffset(w,h,shift/2,vs,w,h); }
   // khoảng cách camera để vừa khung nhìn: halfW = nửa bề ngang cần thấy, halfH = nửa chiều cao cần thấy (đơn vị cảnh)
-  function fitPos(halfW,halfH){ const w=host.clientWidth||800,h=host.clientHeight||600; const wide=innerWidth>900; const shift=wide?Math.min(540,w*.46)+72:0; const lw=Math.max(220,w-shift); const lh=wide?h:h*.5-16; return [0,0,Math.max(halfW/(0.4142*lw/h),halfH/(0.4142*lh/h))]; }
+  function fitPos(halfW,halfH){ const w=host.clientWidth||800,h=host.clientHeight||600; const wide=innerWidth>900; const shift=wide?Math.min(660,w*.54)+72:0; const lw=Math.max(220,w-shift); const lh=wide?h:h*.5-16; return [0,0,Math.max(halfW/(0.4142*lw/h),halfH/(0.4142*lh/h))]; }
   function homePos(){ return fitPos(6.9,4.2); }            // thấy cả hai tế bào con khi giảm phân
   function cellPos(){ return fitPos(3.7,3.9); }            // thấy vừa một tế bào
   controls.maxDistance=40;
@@ -1226,7 +1268,7 @@ function mini3D(V, units, halfW, halfH){
   let paused=false, t=0, raf, last=performance.now();
   const CYCLE=12.5; // 1.5s đứng yên, 8s giảm phân (kì trung gian → GP I → GP II), 3s giữ kết quả
   const btn=document.createElement('button'); btn.className='ghost xt'; btn.textContent='⏸ Tạm dừng'; btn.onclick=()=>{ paused=!paused; btn.textContent=paused?'▶ Chạy tiếp':'⏸ Tạm dừng'; }; $('#tools').appendChild(btn);
-  const shiftPx=()=>{ const w=host.clientWidth; if(innerWidth<=900) return 0; return (wideStage()? w*.5 : Math.min(540,w*.46))+72; };
+  const shiftPx=()=>{ const w=host.clientWidth; if(innerWidth<=900) return 0; return (wideStage()? w*.58 : Math.min(660,w*.54))+72; };
   function fit(){ const w=host.clientWidth||800,h=host.clientHeight||600, wide=innerWidth>900, lw=Math.max(220,w-shiftPx()), lh=wide?h:h*.5-16;
     camera.position.set(0,0,Math.max(halfW/(0.4142*lw/h),halfH/(0.4142*lh/h))); controls.target.set(0,0,0); }
   function resize(){ const w=host.clientWidth,h=host.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); camera.aspect=w/h;
@@ -1296,7 +1338,7 @@ function act1e(P, V){
   <h2>So sánh liên kết gene và phân li độc lập</h2>
   <div class="card" id="e-card">
     <span class="chip">Bảng so sánh</span><span class="counter" id="e-count">Đã ghép 0/6</span>
-    <p class="muted" style="margin:0;font-size:13.5px">Phân biệt di truyền liên kết với di truyền phân li độc lập. Chọn thẻ rồi chạm ô (hoặc kéo thả); chạm ô đã ghép để gỡ ra.</p>
+    <p class="muted" style="margin:0;font-size:15.5px">Kéo thẻ vào đúng ô (hoặc chọn thẻ rồi chạm ô).</p>
     <table class="cmp"><tr><th class="rl"></th><th class="a">Liên kết gene</th><th class="b">Phân li độc lập</th></tr>
       <tr><th class="rl">Sự di truyền các tính trạng</th><td class="slot" data-cell="r1a">Thả thẻ</td><td class="slot" data-cell="r1b">Thả thẻ</td></tr>
       <tr><th class="rl">Sự phân bố của các gene quy định các tính trạng</th><td class="slot" data-cell="r2a">Thả thẻ</td><td class="slot" data-cell="r2b">Thả thẻ</td></tr>
