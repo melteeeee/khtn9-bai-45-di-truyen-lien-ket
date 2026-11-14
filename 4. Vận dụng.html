@@ -408,7 +408,7 @@ function say(text,key){
   const t=$('#narrTx'); if(t) t.innerHTML=text;
   lastKey=key||null; playVoice(key);
 }
-const narrHTML = `<div class="nar"><div class="tx" id="narrTx"></div></div>`;
+const narrHTML = '';   // không hiện khung chữ lời cô giáo, chỉ phát audio thuyết minh
 $('#btnNarr').onclick=()=>{ muted=!muted; $('#btnNarr').setAttribute('aria-pressed',!muted); if(muted) stopVoice(); else playVoice(lastKey); };
 $('#lessonToggle').onclick=()=>{ const l=$('#lesson'); l.classList.toggle('collapsed'); $('#lessonToggle').textContent=l.classList.contains('collapsed')?'▸':'▾'; };
 $('#btnFull').onclick=()=>{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); };
